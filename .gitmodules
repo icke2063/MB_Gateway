@@ -1,0 +1,6 @@
+[submodule "libmodbus"]
+	path = libmodbus
+	url = git://github.com/stephane/libmodbus
+[submodule "MB_Framework"]
+	path = MB_Framework
+	url = git@github.com:icke2063/MB_Framework.git
