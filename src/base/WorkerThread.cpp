@@ -26,10 +26,9 @@
 namespace MB_Gateway {
 
 WorkerThread::WorkerThread(deque<MBFunctor *> *functor_queue,
-		Mutex *functor_lock):
-		p_functor_lock(functor_lock), p_functor_queue(functor_queue), m_running(
-				true),curFunctor(NULL) {
-
+		Mutex *functor_lock) :
+		MBWorkerThread(functor_queue, functor_lock), m_running(true), curFunctor(
+				NULL) {
 	/**
 	 * Init Logging
 	 * - set category name
@@ -58,13 +57,15 @@ void WorkerThread::thread_function(void) {
 
 	while (m_running) {
 		p_worker_thread->yield();
-		{
-			boost::lock_guard<boost::mutex> lock(p_functor_lock->getMutex()); // lock before queue access
+		if(p_functor_lock != NULL && ((Mutex*)(p_functor_lock))->getMutex() != NULL){
+			boost::lock_guard<boost::mutex> lock(*((Mutex*)(p_functor_lock))->getMutex()); // lock before queue access
 
-			if (p_functor_queue->size() > 0) {
+			if (p_functor_queue != NULL && p_functor_queue->size() > 0) {
 				curFunctor.reset(p_functor_queue->front()); // get next functor from queue
 				p_functor_queue->pop_front();				// remove functor from queue
 			}
+		} else {
+			logger->error("p_functor_lock == NULL");
 		}
 
 		if(curFunctor.get() != NULL){

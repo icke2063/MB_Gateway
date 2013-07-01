@@ -51,12 +51,7 @@ private:
 
 	bool m_server_running;
 
-	/**
-	 * functor parameter
-	 */
-	uint16_t m_port;
-
-	ThreadPool *p_pool;
+//	ThreadPool *p_pool;
 
 	int m_server_socket;
 };

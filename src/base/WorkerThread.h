@@ -49,8 +49,6 @@ public:
 	void stopThread(void);
 
 private:
-	deque<MBFunctor *> *p_functor_queue;
-	Mutex *p_functor_lock;
 
 	boost::thread* p_worker_thread;
 	bool m_running;

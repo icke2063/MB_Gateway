@@ -9,7 +9,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/base
 find_library(MODBUS_LIB modbus)
 find_library(LOG4CPP log4cpp)
 #find_library(BOOST_LIB thread)
-FIND_PACKAGE(Boost COMPONENTS filesystem program_options thread serialization REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS thread serialization REQUIRED)
 
 
 ### ADD SOURCES ###
@@ -21,7 +21,7 @@ set (DEF_SOURCES
 	base/WorkerThread.cpp
     base/Connection.cpp
     base/Server.cpp
-    base/SlaveList.cpp
+    base/DefaultHandler.cpp
 	)
 
 

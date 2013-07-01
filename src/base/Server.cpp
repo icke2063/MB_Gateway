@@ -37,10 +37,9 @@ using namespace std;
 namespace MB_Gateway {
 
 Server::Server(ThreadPool *pool, uint16_t port):
-		m_server_running(true),m_server_socket(-1),p_pool(pool),m_port(port){
-
-	/**
-	 * Init Logging
+		MBServer(pool,port),
+		m_server_running(true),m_server_socket(-1){
+	/*
 	 * - set category name
 	 * - connect with console
 	 * - set loglevel
@@ -51,6 +50,8 @@ Server::Server(ThreadPool *pool, uint16_t port):
 	if(console)logger->addAppender(console);
 
 	logger->info("Modbus TCP Server@%i",m_port);
+	logger->debug("Threadpool@%x",p_pool);
+
 }
 
 Server::~Server() {
@@ -81,6 +82,7 @@ void Server::functor_function(void){
 	m_server_socket = modbus_tcp_listen(ctx, 1);
 	if(m_server_socket == -1){
 		logger->fatal("error: modbus_tcp_listen");
+		return;
 		exit(0);
 	}
 
@@ -122,6 +124,7 @@ void Server::functor_function(void){
 
 			logger->debug("modbus_tcp_accept:%i",ctx_tmp->s);
 			{
+				logger->debug("pool:%x",p_pool);
 				if(p_pool)p_pool->addFunctor(new Connection(ctx_tmp));
 				modbus_free(ctx_tmp);
 			}

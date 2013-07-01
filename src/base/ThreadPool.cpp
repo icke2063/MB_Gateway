@@ -52,6 +52,7 @@ ThreadPool::ThreadPool():
 	logger->info("ThreadPool");
 
 	p_functor_lock = new Mutex();									//init mutex for functor list
+	logger->debug("p_functor_lock:%x",p_functor_lock);
 	boost::thread t1(boost::bind(&ThreadPool::scheduler, this));	// create new scheduler thread
 	p_scheduler_thread = &t1;										//save pointer of thread object
 
@@ -68,6 +69,8 @@ void ThreadPool::scheduler(void){
 
 		if(m_workerThreads.size() < this->getHighWatermark()){
 			logger->debug("create new worker thread: %i of %i",m_workerThreads.size()+1,this->getHighWatermark());
+			logger->debug("p_functor_lock[%x] m_functor_queue[%x]",p_functor_lock,&m_functor_queue);
+
 			WorkerThread *newWorker = new WorkerThread(&m_functor_queue,p_functor_lock);
 			m_workerThreads.insert(newWorker);
 		}
@@ -76,7 +79,7 @@ void ThreadPool::scheduler(void){
 
 void ThreadPool::addFunctor(MBFunctor *work){
 	logger->debug("add Functor #%i",m_functor_queue.size()+1);
-	boost::lock_guard<boost::mutex> lock(p_functor_lock->getMutex());
+	boost::lock_guard<boost::mutex> lock(*p_functor_lock->getMutex());
 	m_functor_queue.push_back(work);
 }
 } /* namespace MB_Gateway */

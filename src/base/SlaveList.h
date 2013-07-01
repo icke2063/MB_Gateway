@@ -25,6 +25,9 @@
 #define SLAVELIST_H_
 
 #include <MBSlaveList.h>
+#include <MBVirtualRTUSlave.h>
+
+using namespace MB_Framework;
 
 #include <Mutex.h>
 
@@ -32,8 +35,11 @@ namespace MB_Gateway {
 
 class SlaveList: public MB_Framework::MBSlaveList {
 public:
-	SlaveList();
-	virtual ~SlaveList();
+	SlaveList(){
+		p_slavelist_lock = new Mutex;
+	}
+
+	virtual ~SlaveList(){};
 	Mutex *p_slavelist_lock;
 };
 

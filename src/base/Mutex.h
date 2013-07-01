@@ -34,7 +34,7 @@ public:
 	Mutex(){};
 	virtual ~Mutex(){};
 
-	virtual boost::mutex& getMutex(void){return m_mutex;}
+	virtual boost::mutex *getMutex(void){return &m_mutex;}
 
 private:
 	boost::mutex m_mutex;

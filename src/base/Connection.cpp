@@ -41,6 +41,8 @@
 using namespace boost::serialization;
 
 #include <SlaveList.h>
+#include <MBHandlerInt.h>
+#include <HandlerParam.h>
 using namespace MB_Framework;
 
 namespace MB_Gateway {
@@ -64,20 +66,149 @@ Connection::Connection(modbus_t *ctx) :
 
 Connection::~Connection() {
 	logger->info("~Connection\n");
-	m_connection_running = false;	//disable functor
+	m_connection_running = false; //disable functor
 }
 
-void Connection::functor_function(void) {
-	modbus_mapping_t * cur_mapping = NULL;
-	uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
-	int rc; /* mb returen code */
+bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
+		enum handleQuery_mode mode) {
 
-	/* query informaions */
+	/* var for query informations */
 	int offset;
 	uint8_t slave;
 	uint8_t function;
-	uint16_t count;
 	uint16_t address;
+	uint16_t count = 0;
+
+	uint16_t register_done = 0;
+	uint16_t cur_address;
+	uint16_t handler_retval;
+
+	/* get needed informatons */
+	offset = m_ctx.backend->header_length;
+	slave = query[offset - 1];
+	function = query[offset];
+	address = (query[offset + 1] << 8) + query[offset + 2];
+	cur_address = address;
+
+	/* get data count */
+	switch (function) {
+	case _FC_READ_INPUT_REGISTERS:
+	case _FC_READ_HOLDING_REGISTERS:
+	case _FC_WRITE_MULTIPLE_REGISTERS:
+		count = (query[offset + 3] << 8) + query[offset + 4];
+		break;
+	case _FC_WRITE_SINGLE_REGISTER:
+		count = 1;
+		break;
+		/* unsupported FC */
+	case _FC_READ_COILS:
+	case _FC_READ_DISCRETE_INPUTS:
+	case _FC_WRITE_SINGLE_COIL:
+	case _FC_READ_EXCEPTION_STATUS:
+	case _FC_WRITE_MULTIPLE_COILS:
+	case _FC_REPORT_SLAVE_ID:
+	case _FC_WRITE_AND_READ_REGISTERS:
+	default:
+		return false;
+		break;
+	}
+
+	logger->debug("count[0x%x]", count);
+
+	/* loop over handlerlist */
+	while (cur_address < (address + count)) {
+		logger->debug("find handler[0x%x]", cur_address);
+		logger->debug("handler size: %i", tmp_slave->m_handlerlist.size());
+
+		if (tmp_slave->m_handlerlist.size() > 0) {
+			/* get handlerfunction of current address */
+			map<uint16_t, MBHandlerInt*>::iterator handler_it =
+					tmp_slave->m_handlerlist.find(cur_address); //try to find slavehandlers
+			if (handler_it != tmp_slave->m_handlerlist.end()) {
+				logger->debug("found handler");
+				HandlerParam * param = new HandlerParam(slave, function,
+						cur_address, count - register_done,
+						tmp_slave->getMappingDB()); //create new handler object
+				switch (mode) {
+				case handleReadAccess:
+					logger->debug("handleReadAccess[0x%x]", cur_address);
+					//call handleReadAccess function
+					if ((handler_retval =
+							(*handler_it).second->handleReadAccess(param))
+							> 0) {
+						logger->debug("handler_retval: %i", handler_retval);
+						cur_address += handler_retval;
+						register_done += handler_retval;
+						continue;
+					} else {
+						//handler error -> exception
+						logger->error("handler error: modbus_reply_exception");
+						return false;
+						break;
+					}
+					break;
+
+				case checkWriteAccess:
+					logger->debug("checkWriteAccess[0x%x]", cur_address);
+					//call handleReadAccess function
+					if ((handler_retval =
+							(*handler_it).second->checkWriteAccess(param))
+							> 0) {
+						logger->debug("handler_retval: %i", handler_retval);
+						cur_address += handler_retval;
+						register_done += handler_retval;
+						continue;
+					} else {
+						//handler error -> exception
+						logger->error("handler error: modbus_reply_exception");
+						return false;
+						break;
+					}
+					break;
+				case handleWriteAccess:
+					logger->debug("handleWriteAccess[0x%x]", cur_address);
+					//call handleReadAccess function
+					if ((handler_retval =
+							(*handler_it).second->handleWriteAccess(param))
+							> 0) {
+						logger->debug("handler_retval: %i", handler_retval);
+						cur_address += handler_retval;
+						register_done += handler_retval;
+						continue;
+					} else {
+						//handler error -> exception
+						logger->error("handler error: modbus_reply_exception");
+						return false;
+						break;
+					}
+					break;
+				default:
+					return 0;
+					break;
+				}
+			} else {
+				//no handler found -> exception
+				logger->error("no handler found: modbus_reply_exception");
+				return false;
+				break;
+			}
+		} else {
+			//no handler found -> exception
+			logger->error("empty handlerlist: modbus_reply_exception");
+			return false;
+			break;
+		}
+	}
+	return true;
+}
+void Connection::functor_function(void) {
+	uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
+	int rc; /* mb returen code */
+
+	/* query informations */
+	int offset;
+	uint8_t slave;
+	uint8_t function;
 
 	bool connected = true;
 
@@ -85,12 +216,6 @@ void Connection::functor_function(void) {
 	fd_set rfds;
 	struct timeval tv;
 	int retval;
-
-	uint16_t cur_address;
-	uint16_t register_done;
-	uint16_t handler_retval;
-
-	cur_mapping = modbus_mapping_new(0, 0, 0, 0);
 
 	/* Watch stdin (fd 0) to see when it has input. */
 
@@ -129,20 +254,13 @@ void Connection::functor_function(void) {
 			offset = m_ctx.backend->header_length;
 			slave = query[offset - 1];
 			function = query[offset];
-			count = (query[offset + 3] << 8) + query[offset + 4];
-			address = (query[offset + 1] << 8) + query[offset + 2];
 
-			cur_address = address;
-
-			logger->debug("query[slave]:%i", slave);
-			logger->debug("query[function]:%i", function);
-			logger->debug("query[address]:%i", address);
-			logger->debug("query[count]:%i", count);
-
+			logger->debug("query[slave]:0x%x", slave);
+			logger->debug("query[function]:0x%x", function);
 			{
 				//lock list access
 				boost::lock_guard<boost::mutex> lock(
-						boost::serialization::singleton<SlaveList>::get_mutable_instance().p_slavelist_lock->getMutex());
+						*(boost::serialization::singleton<SlaveList>::get_mutable_instance().p_slavelist_lock->getMutex()));
 				//get pointer to list
 				map<uint8_t, MBVirtualRTUSlave*> *p_slavelist =
 						&(boost::serialization::singleton<SlaveList>::get_mutable_instance().slavelist);
@@ -152,48 +270,79 @@ void Connection::functor_function(void) {
 						p_slavelist->find(slave); //try to find virtual RTU Slave
 
 				if (slave_it != p_slavelist->end()) {
+					VirtualRTUSlave *tmp_slave =
+							(VirtualRTUSlave *) (slave_it->second);
+					logger->debug("found slave[0x%x]:0x%x", slave, tmp_slave);
 
-					/* loop over handlerlist */
-					while (cur_address < (address + count)) {
-
-						/* get handlerfunction of current address */
-						map<uint16_t, MBHandlerInt*>::iterator handler_it =
-								(*slave_it).second->handlerlist.find(
-										cur_address); //try to find slavehandlers
-						if (handler_it
-								!= (*slave_it).second->handlerlist.end()) {
-
-							//found handler function
-							if ((handler_retval =
-									(*handler_it).second->handleQuery()) > 0) {
-								cur_address += handler_retval;
+					if (tmp_slave != NULL) {
+						switch (function) {
+						case _FC_READ_INPUT_REGISTERS:
+						case _FC_READ_HOLDING_REGISTERS:
+							/*
+							 * read operations
+							 * -> handle ReadAccess by handleQuery
+							 */
+							if (handleQuery(query, tmp_slave,
+									handleReadAccess)) {
+								logger->debug("modbus_reply[0x%x;0x%x]:0x%x", m_ctx.s,
+										tmp_slave->getMappingDB(),
+										modbus_reply(&m_ctx, query, rc,
+												tmp_slave->getMappingDB()));
+								continue;
 							} else {
-								//handler error -> exception
-								logger->error(
-										"handler error: modbus_reply_exception");
 								modbus_reply_exception(&m_ctx, query,
 										MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 								continue;
 							}
-						} else {
-							//no handler found -> exception
-							logger->error(
-									"no handler found: modbus_reply_exception");
+							break;
+						case _FC_WRITE_MULTIPLE_REGISTERS:
+						case _FC_WRITE_SINGLE_REGISTER:
+							/*
+							 * write operations
+							 *  -> check writeAccess by handleQuery
+							 *  -> extract data from query by modbus library to database
+							 *  -> handle writeAccess by handleQuery(ThreadPool ?)
+							 */
+							if (handleQuery(query, tmp_slave,
+									checkWriteAccess)) {
+								logger->debug("modbus_reply[0x%x;0x%x]:0x%x", m_ctx.s,
+										tmp_slave->getMappingDB(),
+										modbus_reply(&m_ctx, query, rc,
+												tmp_slave->getMappingDB()));
+								handleQuery(query, tmp_slave,
+										handleWriteAccess);
+								continue;
+							} else {
+								modbus_reply_exception(&m_ctx, query,
+										MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+								continue;
+							}
+							break;
+							/* unsupported FC */
+						case _FC_READ_COILS:
+						case _FC_READ_DISCRETE_INPUTS:
+						case _FC_WRITE_SINGLE_COIL:
+						case _FC_READ_EXCEPTION_STATUS:
+						case _FC_WRITE_MULTIPLE_COILS:
+						case _FC_REPORT_SLAVE_ID:
+						case _FC_WRITE_AND_READ_REGISTERS:
+						default:
 							modbus_reply_exception(&m_ctx, query,
-									MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
-							continue;
+									MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
 						}
+					} else {
+						logger->error(
+								"slave not registred: modbus_reply_exception");
+						modbus_reply_exception(&m_ctx, query,
+								MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+
 					}
 				} else {
-					logger->error("no slave found: modbus_reply_exception");
-					//slave not found -> reply exception
+					logger->error("slave out of range: modbus_reply_exception");
 					modbus_reply_exception(&m_ctx, query,
 							MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
-					continue;
 				}
-
 			}
-			modbus_reply(&m_ctx, query, rc, cur_mapping);
 		} else {
 			connected = false;
 			break;

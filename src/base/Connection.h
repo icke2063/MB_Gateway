@@ -30,10 +30,19 @@
 #include "modbus-private.h"
 #include "modbus.h"
 
+#include <VirtualRTUSlave.h>
 #include <Logger.h>
+
+using namespace MB_Framework;
 namespace MB_Gateway {
 
 class Connection: public MB_Framework::MBConnection, public Logger{
+
+	enum handleQuery_mode {
+		handleReadAccess = 0x00,
+		checkWriteAccess = 0x01,
+		handleWriteAccess = 0x02
+	};
 public:
 	Connection(modbus_t *ctx);
 	virtual ~Connection();
@@ -41,6 +50,8 @@ public:
 private:
 	virtual void functor_function(void);
 	bool m_connection_running;
+
+	bool handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave, enum handleQuery_mode mode);
 
 	/* connection information from libmodbus library */
 	modbus_t m_ctx;
