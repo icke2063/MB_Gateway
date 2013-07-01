@@ -1,0 +1,368 @@
+/**
+ * @file   IOBoardSlave.cpp
+ * @Author icke
+ * @date   02.06.2013
+ * @brief  Brief description of file.
+ *
+ * Detailed description of file.
+ */
+
+#include <IOBoardSlave.h>
+#include <stddef.h>
+
+#include <HandlerList.h>
+#include <I2CComm.h>
+
+#include "boost/serialization/singleton.hpp"
+#include "MultiByteHandler.h"
+#include "SingleRegisterHandler.h"
+#include "HolRegHandler.h"
+#include "HolRegHandlerRO.h"
+
+namespace MB_Gateway {
+namespace I2C {
+VersionHandler::VersionHandler() :
+		MultiByteHandler(_16bit, -1) {
+	logger->info("VersionHandler");
+	enableReadInpReg = false; //disable input register access
+}
+
+int VersionHandler::handleReadAccess(MBHandlerParam *param) {
+
+	logger->debug("VersionHandler::handleReadAccess");
+
+	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
+	if (curHandler != NULL) {
+		/* check for the correct address range */
+		setRange((VERSION_START / 2), (VERSION_LENGTH / 2) - 1);
+		if (!checkRange((curHandler->m_address), curHandler->m_count))
+			return 0;
+		if (curHandler->m_count != (VERSION_LENGTH / 2))
+			return 0;
+		return MultiByteHandler::handleReadAccess(param);
+	}
+	return 0; //return zero register handled > modbus exception
+}
+
+int DataHandler::handleReadAccess(MBHandlerParam *param) {
+	logger->debug("DataHandler::handleReadAccess");
+
+	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
+	if (curHandler != NULL) {
+		//check access alignment
+		if (curHandler->m_address % 2 != 0) {
+			logger->error("address not correct aligned");
+			return 0; //only even adresses -> alignment 2 register
+		}
+		if (curHandler->m_count % 2) {
+			logger->error("count not correct aligned");
+			return 0; //only even counts -> alignement 2 register count
+		}
+
+		/* check for the correct address range */
+		if (!checkRange((curHandler->m_address), curHandler->m_count)) {
+			logger->error("range failure");
+			logger->error("Range(0x%x,0x%x)", getRStart(), getRStop());
+			logger->error("checkRange(0x%x,0x%x)", curHandler->m_address,
+					curHandler->m_count);
+			return 0;
+		}
+
+		return MultiByteHandler::handleReadAccess(param);
+	}
+	return 0; //return zero register handled > modbus exception
+}
+int DataHandler::checkWriteAccess(MBHandlerParam *param) {
+	logger->debug("DataHandler::checkWriteAccess");
+
+	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
+	if (curHandler != NULL) {
+		//check access alignment
+		if (curHandler->m_address % 2 != 0)
+			return 0; //only even adresses -> alignment 2 register
+		if (curHandler->m_count % 2)
+			return 0; //only even counts -> alignement 2 register count
+
+		/* check for the correct address range */
+		setRange((VIRTUAL_DATA_START / 2),
+				(VIRTUAL_DATA_START / 2) + (IOBOARD_MAX_IO_PINS / 2) - 1);
+		if (!checkRange((curHandler->m_address), curHandler->m_count))
+			return 0;
+
+		return MultiByteHandler::checkWriteAccess(param);
+	}
+	return 0; //return zero register handled > modbus exception
+}
+
+IOBoard_Slave::IOBoard_Slave(uint8_t SlaveID) :
+		I2C_Slave(SlaveID) {
+
+	logger = &log4cpp::Category::getInstance(std::string("IOBoard_Slave"));
+	logger->setPriority(log4cpp::Priority::DEBUG);
+	if (console)
+		logger->addAppender(console);
+
+	logger->info("IOBoard_Slave[0x%x]", SlaveID);
+
+	m_mapping = modbus_mapping_new(0, 0, (I2C_BUFFER_SIZE + EEPROM_SIZE / 2),
+			0);
+	logger->debug("m_mapping:%x", m_mapping);
+
+	init();
+	getSlaveInfo();
+}
+
+IOBoard_Slave::~IOBoard_Slave() {
+}
+
+bool IOBoard_Slave::init(void) {
+	int i, e;
+	uint8_t pincount;
+	uint16_t handler_address;
+
+	/*
+	 * address register (m_mode byte)
+	 * data register (byte_count byte)
+	 */
+	uint8_t recvbuffer[_16bit + 2];
+
+	logger->info("init");
+
+	/*
+	 * get some informations directly from ioboard
+	 */
+
+	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen(
+			"/dev/i2c-1");
+
+	// set virtual pin count address
+	recvbuffer[0] = (VIRTUAL_IO_COUNT >> 8); //first high
+	recvbuffer[1] = (VIRTUAL_IO_COUNT & 0xff); //second low
+
+	// read data from i2c bus
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
+			getSlaveID(), recvbuffer, _16bit, 2)) {
+		pincount = recvbuffer[0];
+		logger->info("IOBoard[0x%x] pincount:%i", getSlaveID(), pincount);
+	} else {
+		logger->error("IOBoard[0x%x] unable read pincount", getSlaveID());
+		return false;
+	}
+
+	///add handler
+	MultiByteHandler *Multi = NULL;
+	SingleRegisterHandler *Single = NULL;
+	VersionHandler *Version = NULL;
+	HolRegHandler *Holding = NULL;
+	HolRegHandlerRO *HoldingRO = NULL;
+	DataHandler *TmpData = NULL;
+	DataHandler *PermData = NULL;
+
+	boost::lock_guard<boost::mutex> lock(
+			*(boost::serialization::singleton<HandlerList>::get_mutable_instance().p_handlerlist_lock->getMutex()));
+	list<MBHandlerInt*> *phandlerlist = &(boost::serialization::singleton<
+			HandlerList>::get_mutable_instance().m_handlerlist);
+
+	list<MBHandlerInt*>::iterator handler_it = phandlerlist->begin(); // get first handler
+
+	while (handler_it != phandlerlist->end()) {
+		/* MultiByte */
+		if (Multi == NULL) {
+			Multi = dynamic_cast<MultiByteHandler*>(*handler_it);
+		}
+		/* SingleRegister */
+		if (Single == NULL) {
+			Single = dynamic_cast<SingleRegisterHandler*>(*handler_it);
+		}
+
+		/* HolRegHandler */
+		if (Holding == NULL) {
+			Holding = dynamic_cast<HolRegHandler*>(*handler_it);
+		}
+
+		/* HolRegHandlerRO */
+		if (HoldingRO == NULL) {
+			HoldingRO = dynamic_cast<HolRegHandlerRO*>(*handler_it);
+		}
+
+		/* VersionHandler */
+		if (Version == NULL) {
+			Version = dynamic_cast<VersionHandler*>(*handler_it);
+		}
+
+		++handler_it;
+	}
+
+	/*
+	 * create new specialist handler if not already in list
+	 */
+
+	if (Multi == NULL) {
+		Multi = new MultiByteHandler(); //virtual IO Port handler
+		phandlerlist->push_back(Multi);
+	}
+
+	if (Single == NULL) {
+		Single = new SingleRegisterHandler(); //virtual IO Port handler
+		phandlerlist->push_back(Single);
+	}
+
+	if (Holding == NULL) {
+		Holding = new HolRegHandler(_16bit); //virtual IO Port handler
+		phandlerlist->push_back(Holding);
+	}
+
+	if (HoldingRO == NULL) {
+		HoldingRO = new HolRegHandlerRO(_16bit);
+		phandlerlist->push_back(HoldingRO);
+	}
+
+	if (Version == NULL) {
+		Version = new VersionHandler();
+		phandlerlist->push_back(Version);
+	}
+
+	if (TmpData == NULL) {
+		TmpData = new DataHandler();
+		TmpData->setRange((VIRTUAL_DATA_START / 2),
+				(VIRTUAL_DATA_START / 2) + (pincount * 2) - 1);
+	}
+
+	if (PermData == NULL) {
+		PermData = new DataHandler();
+		PermData->setRange(((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2),
+				(VIRTUAL_DATA_START / 2) + (pincount * 2) - 1);
+	}
+
+	/**
+	 * create mapping
+	 */
+
+	m_handlerlist[0] = HoldingRO; /// SlaveID
+	m_handlerlist[VERSION_START / 2] = Version; /// Version
+
+	m_handlerlist[8] = HoldingRO; /// virtual pin count
+
+	m_handlerlist[10] = Holding; /// virtual IO Port handler
+	m_handlerlist[11] = Holding; /// virtual IO Port handler
+
+	/// add all tmp data handler
+	for (i = 0; i < pincount; i++) {
+		handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
+		m_handlerlist[handler_address] = TmpData;
+		logger->debug("add TmpData handler[0x%x]", handler_address);
+	}
+
+	/// eeprom
+	m_handlerlist[I2C_BUFFER_SIZE / 2] = Holding; /// I2C Address
+
+	/// add all function handler
+	for (i = 0; i < pincount; i++) {
+		handler_address = (I2C_BUFFER_SIZE / 2) + (EEPROM_FUNC_START / 2) + i;
+		m_handlerlist[handler_address] = Holding; /// add all function
+		logger->debug("add function handler[0x%x]", handler_address);
+	}
+
+	/// add all perm data handler
+	for (i = 0; i < pincount; i++) {
+		handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2) + (i * 2);
+		m_handlerlist[handler_address] = PermData;
+		logger->debug("add PermData handler[0x%x]", handler_address);
+	}
+
+	/// add all name handler
+	for (i = 0; i < pincount; i++) {
+		for (e = 0; e < IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2; e++) {
+			handler_address = ((I2C_BUFFER_SIZE + EEPROM_NAME_START) / 2)
+					+ (i * (IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2) + e);
+			m_handlerlist[handler_address] = Holding;
+			logger->debug("add name[%i] handler[0x%x]", i, handler_address);
+		}
+	}
+
+	logger->debug("finished");
+	return true;
+}
+
+void IOBoard_Slave::getSlaveInfo(void) {
+	uint8_t pincount, i;
+	uint16_t i2c_address;
+	/*
+	 * address register (m_mode byte)
+	 * data register (byte_count byte)
+	 */
+	uint8_t recvbuffer[_16bit + 0x20];
+
+	logger->info("getSlaveInfo");
+
+	/*
+	 * get some informations directly from ioboard
+	 */
+
+	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen(
+			"/dev/i2c-1");
+
+	// get SlaveID
+	recvbuffer[0] = 0; //first high
+	recvbuffer[1] = 0; //second low
+	// read data from i2c bus
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
+			getSlaveID(), recvbuffer, _16bit, 2)) {
+		logger->info("IOBoard[0x%x]SlaveID:0x%x", getSlaveID(), recvbuffer[0]);
+	}
+
+	// get Version
+	recvbuffer[0] = (VERSION_START >> 8); //first high
+	recvbuffer[1] = (VERSION_START & 0xff); //second low
+	// read data from i2c bus
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
+			getSlaveID(), recvbuffer, _16bit, VERSION_LENGTH)) {
+		recvbuffer[VERSION_LENGTH] = '\0';
+		logger->info("IOBoard[0x%x]Version:%s", getSlaveID(), recvbuffer);
+	}
+
+	// set virtual pin count address
+	recvbuffer[0] = (VIRTUAL_IO_COUNT >> 8); //first high
+	recvbuffer[1] = (VIRTUAL_IO_COUNT & 0xff); //second low
+	// read data from i2c bus
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
+			getSlaveID(), recvbuffer, _16bit, 2)) {
+		pincount = recvbuffer[0];
+		logger->info("IOBoard[0x%x] pincount:%i", getSlaveID(), pincount);
+	} else {
+		logger->error("IOBoard[0x%x] unable read pincount", getSlaveID());
+		return;
+	}
+
+	// get virtual pin functions
+	recvbuffer[0] = (((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START)) >> 8); //first high
+	recvbuffer[1] = (((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START)) & 0xff); //second low
+	logger->debug("function:0x%x", ((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START)));
+	// read data from i2c bus
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
+			getSlaveID(), recvbuffer, _16bit, pincount * 2)) {
+		for (i = 0; i < pincount; i++) {
+			logger->info("function[%i]:0x%x", i, recvbuffer[(i * 2) + 1]);
+		}
+	}
+
+	for (i = 0; i < pincount; i++) {
+		i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
+				+ (i * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+		// get virtual pin names
+		recvbuffer[0] = (i2c_address >> 8); //first high
+		recvbuffer[1] = (i2c_address & 0xff); //second low
+		logger->debug("name[%i]:0x%x", i, i2c_address);
+		// read data from i2c bus
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
+				getSlaveID(), recvbuffer, _16bit,
+				IO_BOARD_MAX_IO_PIN_NAME_LENGTH)) {
+			recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0';
+			logger->info("name[%i]:%s", i, recvbuffer);
+		}
+	}
+
+}
+
+} /* namespace I2C */
+}/* namespace MB_Gateway */

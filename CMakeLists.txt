@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project (mb_gateway)
 
+#support switches
+option(I2C_SUPPORT "compile with I2C support" ON)
+
 include_directories(/usr/include)
 
 #libmodbus git subdirectory

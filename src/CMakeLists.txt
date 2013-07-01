@@ -24,11 +24,28 @@ set (DEF_SOURCES
     base/DefaultHandler.cpp
 	)
 
-
+#add I2C includes
+if (I2C_SUPPORT)
+	include_directories(
+	${CMAKE_CURRENT_BINARY_DIR}/I2C
+	${CMAKE_CURRENT_SOURCE_DIR}/I2C
+	${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C-Comm
+	${CMAKE_CURRENT_SOURCE_DIR}/I2C/Handler
+	${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C_IO_BOARD.git/base/inc	
+	)
+	
+	set (I2C_SOURCES
+	I2C/IOBoardSlave.cpp
+	I2C/I2C-Comm//I2CComm.cpp
+	I2C/Handler/MultiByteHandler.cpp
+	)
+	
+endif (I2C_SUPPORT)
 
 ### ADD TARGET ###
 add_executable (${PROJECT_NAME}
 				${DEF_SOURCES}
+				${I2C_SOURCES}
 )
 
 ### ADD PREPROCESS MACROS ###
