@@ -10,7 +10,7 @@
 #ifndef MULTIBYTEHANDLER_H_
 #define MULTIBYTEHANDLER_H_
 
-#include <DefaultHandler.h>
+#include <handler/DefaultHandler.h>
 using namespace MB_Framework;
 
 #include <Logger.h>

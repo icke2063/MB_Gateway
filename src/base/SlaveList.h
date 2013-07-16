@@ -35,12 +35,51 @@ namespace MB_Gateway {
 
 class SlaveList: public MB_Framework::MBSlaveList {
 public:
-	SlaveList(){
+	SlaveList() {
 		p_slavelist_lock = new Mutex;
 	}
 
-	virtual ~SlaveList(){};
-	Mutex *p_slavelist_lock;
+	virtual ~SlaveList() {
+	}
+	;
+
+	virtual void addSlave(uint8_t index, MBVirtualRTUSlave *newSlave) {
+		boost::lock_guard<boost::mutex> lock(*((Mutex* )p_slavelist_lock)->getMutex()); //lock slavelist
+
+		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave already added?
+		if (it == m_slavelist.end()) {
+			m_slavelist[index] = newSlave;
+		}
+
+	}
+	virtual MBVirtualRTUSlave *removeSlave(uint8_t index) {
+		MBVirtualRTUSlave* result = NULL;
+		boost::lock_guard<boost::mutex> lock(*((Mutex* )p_slavelist_lock)->getMutex()); //lock slavelist
+
+		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave in list?
+		if (it != m_slavelist.end()) {
+			result = it->second; //get pointer
+			m_slavelist.erase(it); //remove from list
+		}
+
+		return result;
+	}
+
+	virtual void deleteSlave(uint8_t index) {
+		MBVirtualRTUSlave* slave = removeSlave(index); //remove slave from list
+		if (slave != NULL)
+			delete slave; //delete if object exist
+	}
+
+	virtual MBVirtualRTUSlave *getSlave(uint8_t index) {
+		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave in list?
+		if (it != m_slavelist.end()) {
+			return it->second; //get pointer
+		}
+		return NULL;
+	}
+
+	Mutex *getLock(){return (Mutex *)p_slavelist_lock;}
 };
 
 } /* namespace MB_Gateway */

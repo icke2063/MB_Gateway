@@ -209,11 +209,12 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 		case _FC_WRITE_SINGLE_REGISTER: //FC 06:write single holding register
 			if (!enableWriteSHolReg)
 				return 0;
+			break;
 		case _FC_WRITE_MULTIPLE_REGISTERS: //FC 16:write multiple holding register
 		{
 			if (!enableWriteHolReg)
 				return 0;
-			if ((address + 1) > curHandler->p_mb_mapping->nb_registers)
+			if ((address + (byte_count/2)) > curHandler->p_mb_mapping->nb_registers)
 				return 0;
 			MBConvert converter;
 			converter.ShorttoBigEndian(&sendbuffer[send_offset],

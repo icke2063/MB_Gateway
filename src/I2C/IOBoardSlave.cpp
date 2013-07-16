@@ -155,8 +155,6 @@ bool IOBoard_Slave::init(void) {
 	VersionHandler *Version = NULL;
 	HolRegHandler *Holding = NULL;
 	HolRegHandlerRO *HoldingRO = NULL;
-	DataHandler *TmpData = NULL;
-	DataHandler *PermData = NULL;
 
 	boost::lock_guard<boost::mutex> lock(
 			*(boost::serialization::singleton<HandlerList>::get_mutable_instance().p_handlerlist_lock->getMutex()));
@@ -222,17 +220,13 @@ bool IOBoard_Slave::init(void) {
 		phandlerlist->push_back(Version);
 	}
 
-	if (TmpData == NULL) {
-		TmpData = new DataHandler();
+		TmpData.reset(new DataHandler());
 		TmpData->setRange((VIRTUAL_DATA_START / 2),
 				(VIRTUAL_DATA_START / 2) + (pincount * 2) - 1);
-	}
 
-	if (PermData == NULL) {
-		PermData = new DataHandler();
+		PermData.reset(new DataHandler());
 		PermData->setRange(((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2),
 				(VIRTUAL_DATA_START / 2) + (pincount * 2) - 1);
-	}
 
 	/**
 	 * create mapping
@@ -249,7 +243,7 @@ bool IOBoard_Slave::init(void) {
 	/// add all tmp data handler
 	for (i = 0; i < pincount; i++) {
 		handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
-		m_handlerlist[handler_address] = TmpData;
+		m_handlerlist[handler_address] = TmpData.get();
 		logger->debug("add TmpData handler[0x%x]", handler_address);
 	}
 
@@ -266,7 +260,7 @@ bool IOBoard_Slave::init(void) {
 	/// add all perm data handler
 	for (i = 0; i < pincount; i++) {
 		handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2) + (i * 2);
-		m_handlerlist[handler_address] = PermData;
+		m_handlerlist[handler_address] = PermData.get();
 		logger->debug("add PermData handler[0x%x]", handler_address);
 	}
 

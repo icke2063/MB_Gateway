@@ -20,6 +20,7 @@ class VirtualRTUSlave: public MB_Framework::MBVirtualRTUSlave {
 public:
 	VirtualRTUSlave(uint8_t ID):MBVirtualRTUSlave(ID) {}
 	virtual ~VirtualRTUSlave() {}
+	virtual uint8_t getType( void ){return 0x00;}
 	modbus_mapping_t *getMappingDB(void){return m_mapping;}
 protected:
 	modbus_mapping_t *m_mapping;

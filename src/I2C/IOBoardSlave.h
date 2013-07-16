@@ -10,6 +10,10 @@
 #ifndef IOBOARDSLAVE_H_
 #define IOBOARDSLAVE_H_
 
+#include <auto_ptr.h>
+using namespace std;
+
+
 #include "I2C_IO_BOARD.git/base/inc/slave_eeprom_mapping.h"
 
 #include <Logger.h>
@@ -47,12 +51,17 @@ public:
 };
 
 
-class IOBoard_Slave: public I2C_Slave, public Logger {
+class IOBoard_Slave: public I2C_Slave {
 public:
 	IOBoard_Slave(uint8_t SlaveID);
 	virtual ~IOBoard_Slave();
 	bool init(void);
 	void getSlaveInfo(void);
+	virtual uint8_t getType( void ){return 0x11;}
+
+private:
+	auto_ptr<DataHandler> TmpData;
+	auto_ptr<DataHandler> PermData;
 };
 
 } /* namespace I2C */
