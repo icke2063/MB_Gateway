@@ -18,11 +18,15 @@
 //own lib
 #include <Logger.h>
 
+#define DEFAULT_SUMMERY_TIMEOUT_MS	1000
+#define DEFAULT_SUMMERY_ADDR	255
+
+
 namespace MB_Gateway {
 
 class SummerySlave: public MB_Gateway::VirtualRTUSlave, public Logger {
 public:
-	SummerySlave(uint8_t ID);
+	SummerySlave(uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
 	virtual ~SummerySlave();
 	virtual uint8_t getType( void ){return 0x01;}
 
