@@ -46,9 +46,15 @@ WorkerThread::WorkerThread(deque<MBFunctor *> *functor_queue,
 	p_worker_thread = &t1; 													// save pointer of thread object
 }
 
-WorkerThread::~WorkerThread() {
+void WorkerThread::stopThread(void){
 	m_running = false;
-	p_worker_thread->join();
+}
+
+WorkerThread::~WorkerThread() {
+	stopThread();
+	while(m_status != finished){
+		usleep(1);
+	}
 	logger->info("~WorkerThread");
 
 }
@@ -66,14 +72,22 @@ void WorkerThread::thread_function(void) {
 			}
 		} else {
 			logger->error("p_functor_lock == NULL");
+			m_status = idle;
+			return;
 		}
 
 		if(curFunctor.get() != NULL){
-			logger->debug("get next functor");
+			//logger->debug("get next functor");
+			m_status = running;
 			curFunctor->functor_function(); // call handling function
 			curFunctor.reset(NULL); 		// reset pointer
+		} else {
+			m_status = idle;
 		}
+		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 	}
+	m_status = finished;
+	logger->debug("exit thread");
 }
 
 } /* namespace MB_Framework */
