@@ -44,6 +44,7 @@ public:
 	;
 
 	virtual void addSlave(uint8_t index, MBVirtualRTUSlave *newSlave) {
+		if(newSlave == NULL)return;
 		boost::lock_guard<boost::mutex> lock(*((Mutex* )p_slavelist_lock)->getMutex()); //lock slavelist
 
 		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave already added?

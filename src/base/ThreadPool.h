@@ -41,8 +41,6 @@ public:
 	virtual void scheduler(void);
 	virtual void addFunctor(MBFunctor *work);
 
-	void scheduler2(void);
-
 private:
 	bool running;
 
@@ -52,7 +50,6 @@ private:
 	 * - on low usage and many created threads -> delete some to save resources
 	 */
 	boost::thread *p_scheduler_thread;
-	Mutex* p_functor_lock;				//lock for functor list
 };
 
 } /* namespace MB_Gateway */

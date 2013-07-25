@@ -21,11 +21,7 @@ public:
 		p_handlerlist_lock = new Mutex;
 
 	}
-	virtual ~HandlerList() {
-		// TODO Auto-generated destructor stub
-	}
-
-	Mutex*	p_handlerlist_lock;		// lock for slavelist
+	virtual ~HandlerList() {}
 };
 
 } /* namespace MB_Gateway */
