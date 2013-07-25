@@ -10,6 +10,7 @@
 #ifndef VIRTUALRTUSLAVE_H_
 #define VIRTUALRTUSLAVE_H_
 
+#include "stddef.h"
 #include <MBVirtualRTUSlave.h>
 
 #include <modbus-private.h>

@@ -26,7 +26,7 @@
 namespace MB_Gateway {
 
 WorkerThread::WorkerThread(deque<MBFunctor *> *functor_queue,
-		Mutex *functor_lock) :
+		MBMutex *functor_lock) :
 		MBWorkerThread(functor_queue, functor_lock), m_running(true), curFunctor(
 				NULL) {
 	/**
@@ -52,7 +52,7 @@ void WorkerThread::stopThread(void){
 
 WorkerThread::~WorkerThread() {
 	stopThread();
-	while(m_status != finished){
+	while(m_status != worker_finished){
 		usleep(1);
 	}
 	logger->info("~WorkerThread");
@@ -72,21 +72,21 @@ void WorkerThread::thread_function(void) {
 			}
 		} else {
 			logger->error("p_functor_lock == NULL");
-			m_status = idle;
+			m_status = worker_idle;
 			return;
 		}
 
 		if(curFunctor.get() != NULL){
 			//logger->debug("get next functor");
-			m_status = running;
+			m_status = worker_running;
 			curFunctor->functor_function(); // call handling function
 			curFunctor.reset(NULL); 		// reset pointer
 		} else {
-			m_status = idle;
+			m_status = worker_idle;
 		}
 		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 	}
-	m_status = finished;
+	m_status = worker_finished;
 	logger->debug("exit thread");
 }
 

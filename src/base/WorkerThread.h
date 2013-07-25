@@ -41,7 +41,7 @@ namespace MB_Gateway {
 
 class WorkerThread: public MB_Framework::MBWorkerThread ,public Logger{
 public:
-	WorkerThread(deque<MBFunctor *> *functor_queue, Mutex *functor_lock);
+	WorkerThread(deque<MBFunctor *> *functor_queue, MBMutex *functor_lock);
 
 	virtual ~WorkerThread();
 

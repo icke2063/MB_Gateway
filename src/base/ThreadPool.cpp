@@ -111,7 +111,7 @@ void ThreadPool::scheduler(void) {
 				set<MBWorkerThread *>::iterator workerThreads_it =
 						m_workerThreads.begin();
 				while (workerThreads_it != m_workerThreads.end()) {
-					if ((*workerThreads_it)->m_status == idle) {
+					if ((*workerThreads_it)->m_status == worker_idle) {
 						WorkerThread *tmp = (WorkerThread*) (*workerThreads_it);
 						logger->debug("finish worker thread[0x%x]: (%i of %i)",tmp,
 								m_workerThreads.size(),
@@ -134,7 +134,7 @@ void ThreadPool::scheduler(void) {
 			set<MBWorkerThread *>::iterator workerThreads_it =
 					m_workerThreads.begin();
 			while (workerThreads_it != m_workerThreads.end()) {
-				if ((*workerThreads_it)->m_status == finished) {
+				if ((*workerThreads_it)->m_status == worker_finished) {
 					WorkerThread *tmp = (WorkerThread*) (*workerThreads_it);
 					logger->debug("delete worker thread[0x%x]: (%i of %i)",tmp,
 							m_workerThreads.size(), this->getHighWatermark());
@@ -152,7 +152,8 @@ void ThreadPool::scheduler(void) {
 
 void ThreadPool::addFunctor(MBFunctor *work) {
 	//logger->debug("add Functor #%i", m_functor_queue.size() + 1);
-	boost::lock_guard<boost::mutex> lock(*p_functor_lock->getMutex());
+	Mutex *tmp = (Mutex *)p_functor_lock;
+	boost::lock_guard<boost::mutex> lock(*tmp->getMutex());
 	m_functor_queue.push_back(work);
 }
 } /* namespace MB_Gateway */
