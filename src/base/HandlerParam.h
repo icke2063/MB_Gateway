@@ -15,6 +15,9 @@
 
 #include <MBHandlerInt.h>
 
+using namespace icke2063::MB_Framework;
+
+namespace icke2063 {
 namespace MB_Gateway {
 
 class HandlerParam: public MB_Framework::MBHandlerParam {
@@ -34,4 +37,5 @@ public:
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* HANDLERPARAM_H_ */

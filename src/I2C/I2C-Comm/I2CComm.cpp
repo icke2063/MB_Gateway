@@ -18,6 +18,7 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -156,3 +157,5 @@ void I2C_Comm::resetLivelist(void) {
 
 } /* namespace I2C */
 }/* namespace MB_Gateway */
+}/* namespace icke2063 */
+

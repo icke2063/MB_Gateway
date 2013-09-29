@@ -17,30 +17,34 @@ using namespace std;
 #include <Server.h>
 #include <SlaveList.h>
 #include <MBVirtualRTUSlave.h>
-using namespace MB_Framework;
+using namespace icke2063::MB_Framework;
+
 #include <SummerySlave.h>
 #ifdef I2C_SUPPORT
-#include <I2CScanner.h>
+	#include <I2CScanner.h>
 #endif
-using namespace MB_Gateway;
+
+using namespace icke2063::MB_Gateway;
 
 int main() {
+int8_t max_functor = 1;
+int8_t offset =1;
 
-	auto_ptr<ThreadPool> pool;
-	auto_ptr<MB_Gateway::I2C::I2C_Scanner> scanner;
-	pool.reset(new ThreadPool());
-	pool->setHighWatermark(5);
+	auto_ptr<Server> default_server;
+	auto_ptr<Server> custom_server;
+	auto_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner;
 
-	cout << "ThreadPool" << std::hex << pool.get() << endl;
 
-	pool->addFunctor(new Server(pool.get(), 502));
-	pool->addFunctor(new Server(pool.get(), 1502));
+	default_server.reset(new Server(502));
 
-	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(
-			255, new SummerySlave(255));
-	scanner.reset(new MB_Gateway::I2C::I2C_Scanner());
+	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(new SummerySlave(255));
+
+	scanner.reset(new icke2063::MB_Gateway::I2C::I2C_Scanner());
 
 	while (1) {
+
+
+		sleep(1);
 	}
 	return 0;
 }

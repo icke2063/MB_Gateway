@@ -12,15 +12,18 @@
 
 #include <MBHandlerInt.h>
 #include <Logger.h>
-using namespace MB_Framework;
+using namespace icke2063::MB_Framework;
+using namespace icke2063::common_cpp;
 
+namespace icke2063 {
 namespace MB_Gateway {
 
-class DefaultHandler:public MBHandlerInt, public MB_Gateway::Logger {
+class DefaultHandler:public MBHandlerInt, public Logger {
 public:
 	DefaultHandler();
 	virtual ~DefaultHandler(){};
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* DEFAULTHANDLER_H_ */

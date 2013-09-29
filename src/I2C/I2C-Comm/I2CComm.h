@@ -24,6 +24,7 @@
 #define MIN_I2C_SLAVE_ADR		0x00
 #define MAX_I2C_SLAVE_ADR		0x77
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -61,4 +62,5 @@ private:
 
 } /* namespace I2C */
 }/* namespace MB_Gateway */
+}/* namespace icke2063 */
 #endif /* I2CCOMM_H_ */

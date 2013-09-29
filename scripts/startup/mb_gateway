@@ -1,0 +1,49 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          mb_gateway
+# Required-Start:    $network
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     true
+# Short-Description: Start/stop the [mb_gateway program]
+### END INIT INFO
+#
+# Startup script for MB_Gateway
+#
+NAME=mb_gateway
+PATH=/usr/bin
+DAEMON=$PATH/$NAME
+OPTIONS=
+LOCK=/var/lock/${Name}
+PIDSPATH=/var/run/
+
+touch ${LOCK}*
+start)
+echo "Starting " $0
+start-stop-daemon --start --quiet --background --pidfile $PIDSPATH/$NAME.pid --exec $DAEMON
+;;
+stop)
+echo "Stopping " $0
+ #
+# Do something to stop the target platform here
+#
+;;
+restart)
+echo "Restarting " $0
+$0 stop
+$0 start
+;;
+status)
+echo "Status Not Implemented"
+#
+# Do something to process status checks here.
+#
+;;
+*)
+echo "Usage: /etc/init.d/$0 {start|stop}"
+exit 1
+;;
+esac
+exit 0

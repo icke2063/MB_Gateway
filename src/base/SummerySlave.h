@@ -20,11 +20,16 @@
 
 #define DEFAULT_SUMMERY_TIMEOUT_MS	1000
 #define DEFAULT_SUMMERY_ADDR	255
+#define DEFAULT_SUMMERY_COUNT	256
+#define DEFAULT_SUMMERY_VALUE	0
 
+using namespace icke2063::MB_Framework;
+using namespace icke2063::common_cpp;
 
+namespace icke2063 {
 namespace MB_Gateway {
 
-class SummerySlave: public MB_Gateway::VirtualRTUSlave, public Logger {
+class SummerySlave: public VirtualRTUSlave, public Logger {
 public:
 	SummerySlave(uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
 	virtual ~SummerySlave();
@@ -44,4 +49,5 @@ private:
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* SUMMERYSLAVE_H_ */

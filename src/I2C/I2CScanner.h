@@ -12,14 +12,21 @@
 
 #define MAX_SCAN_FAIL 5
 
+#include <auto_ptr.h>
+using namespace std;
+
 //ext lib
 #include <boost/thread.hpp>
 
 //own lib
 #include <Logger.h>
+using namespace icke2063::common_cpp;
 
-#define DEFAULT_SCAN_TIMEOUT_MS	10000
+#include <I2CSlave.h>
 
+#define DEFAULT_SCAN_TIMEOUT_MS	1000
+
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -30,7 +37,7 @@ public:
 
 private:
 
-	boost::thread* p_scanner_thread;
+	auto_ptr<boost::thread> m_scanner_thread;
 	bool m_running;
 
 	virtual void thread_function (void);
@@ -39,7 +46,8 @@ private:
     boost::mutex m_Mutex;                   // Mutex
     unsigned int m_timeout;
 
+    I2C_Slave *findSlaveType (uint8_t slaveaddress);
 };
 
-}} /* namespace MB_Gateway::I2C */
+}}} /* namespace icke2063::MB_Gateway::I2C */
 #endif /* I2CSCANNER_H_ */

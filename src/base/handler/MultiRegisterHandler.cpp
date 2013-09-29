@@ -12,6 +12,7 @@
 #include "modbus-private.h"
 #include <string.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 
 int MultiRegisterHandler::handleReadAccess(MBHandlerParam *param) {
@@ -164,3 +165,4 @@ int MultiRegisterHandler::checkWriteAccess(MBHandlerParam *param) {
 	return 0;
 }
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */

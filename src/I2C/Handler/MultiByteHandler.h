@@ -11,11 +11,12 @@
 #define MULTIBYTEHANDLER_H_
 
 #include <handler/DefaultHandler.h>
-using namespace MB_Framework;
+using namespace icke2063::MB_Framework;
 
 #include <Logger.h>
 #include "modbus.h"
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -44,4 +45,5 @@ private:
 
 } /* namespace I2C */
 }/* namespace MB_Gateway */
+}/* namespace icke2063 */
 #endif /* MULTIBYTEHANDLER_H_ */

@@ -13,8 +13,9 @@
 #include "boost/serialization/singleton.hpp"
 #include <I2CComm.h>
 #include <string.h>
-#include <MBConvert.h>
+#include <Convert.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -111,7 +112,7 @@ int MultiByteHandler::handleReadAccess(MBHandlerParam *param) {
 		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 				curHandler->m_slave, recvbuffer, m_mode, byte_count)) {
 
-			MBConvert converter;
+			Convert converter;
 			//copy data to mb_mapping
 			switch (curHandler->m_function) {
 			case _FC_READ_INPUT_REGISTERS: //FC 03:read holding register
@@ -153,6 +154,7 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 	uint16_t i2c_address;
 	uint16_t byte_count;
 	uint8_t send_offset = 0, i;
+	uint16_t ret = 0;
 
 	logger->debug("MultiByteHandler::handleWriteAccess[%i]", m_mode);
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
@@ -194,9 +196,11 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 				logger->error("8Bit mode[%i]", i2c_address);
 				return 0;
 			}
+			logger->debug("8Bit mode[0x%x]", i2c_address);
 			sendbuffer[send_offset++] = (i2c_address & 0xff); //only low value
 			break;
 		case _16bit:
+			logger->debug("16Bit mode[0x%x]", i2c_address);
 			sendbuffer[send_offset++] = (i2c_address >> 8); //first high
 			sendbuffer[send_offset++] = (i2c_address & 0xff); //second low
 			break;
@@ -207,31 +211,43 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 
 		switch (curHandler->m_function) {
 		case _FC_WRITE_SINGLE_REGISTER: //FC 06:write single holding register
-			if (!enableWriteSHolReg)
+			if (!enableWriteSHolReg){
+				logger->error("WriteSingleHolReg disabled");
 				return 0;
+			}
 			break;
 		case _FC_WRITE_MULTIPLE_REGISTERS: //FC 16:write multiple holding register
 		{
-			if (!enableWriteHolReg)
+			if (!enableWriteHolReg){
+				logger->error("WriteHilReg disabled");
 				return 0;
-			if ((address + (byte_count/2)) > curHandler->p_mb_mapping->nb_registers)
+			}
+			if ((address + (byte_count/2)) > curHandler->p_mb_mapping->nb_registers){
+				logger->error("out of range: 0x%x > 0x%x",(address + (byte_count/2)),curHandler->p_mb_mapping->nb_registers);
 				return 0;
-			MBConvert converter;
-			converter.ShorttoBigEndian(&sendbuffer[send_offset],
-					&curHandler->p_mb_mapping->tab_registers[address],
-					(size_t) curHandler->m_count);
-
-			if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(
-					slave, sendbuffer, m_mode, byte_count))
-				return ((byte_count % 2) == 0) ?
-						byte_count / 2 : (byte_count / 2) + 1;
-			else
-				logger->error("Write_I2C_Bytes failure");
+			}
 		}
 			break;
 		default: //not supported FC in this handler
+			logger->error("FC 0x%x not supported",curHandler->m_function);
 			return 0;
 		}
+
+		Convert converter;
+		converter.ShorttoBigEndian(&sendbuffer[send_offset],
+				&curHandler->p_mb_mapping->tab_registers[address],
+				(size_t) curHandler->m_count);
+
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(
+				slave, sendbuffer, m_mode, byte_count)){
+			ret = ((byte_count % 2) == 0) ?
+					byte_count / 2 : (byte_count / 2) + 1;
+			logger->debug("written data count: %i",ret);
+			return ret;
+		}
+		else
+			logger->error("Write_I2C_Bytes failure");
+
 	}
 	return 0; //return zero register handled > modbus exception
 }
@@ -257,3 +273,4 @@ int MultiByteHandler::checkWriteAccess(MBHandlerParam *param) {
 
 } /* namespace I2C */
 }/* namespace MB_Gateway */
+}/* namespace icke2063 */

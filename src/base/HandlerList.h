@@ -13,16 +13,21 @@
 #include <Mutex.h>
 #include <MBHandlerList.h>
 
+using namespace icke2063::MB_Framework;
+using namespace icke2063::common_cpp;
+
+namespace icke2063 {
 namespace MB_Gateway {
 
-class HandlerList:public MB_Framework::MBHandlerList {
+class HandlerList:public MBHandlerList {
 public:
 	HandlerList() {
-		p_handlerlist_lock = new Mutex;
+		m_handlerlist_lock.reset(new Mutex);
 
 	}
 	virtual ~HandlerList() {}
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* HANDLERLIST_H_ */

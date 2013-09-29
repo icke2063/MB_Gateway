@@ -15,6 +15,7 @@
 #include <HandlerList.h>
 #include <SlaveList.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 
 SummerySlave::SummerySlave(uint8_t SlaveAddr, unsigned int timeout) :
@@ -24,7 +25,7 @@ SummerySlave::SummerySlave(uint8_t SlaveAddr, unsigned int timeout) :
 	logger->setPriority(log4cpp::Priority::DEBUG);
 	//if (console)logger->addAppender(console);
 
-	logger->info("SummerySlave");
+	logger->info("SummerySlave@%i",SlaveAddr);
 	logger->debug("m_timeout: %d",m_timeout);
 
 	init();
@@ -65,7 +66,7 @@ void SummerySlave::thread_function(void) {
 				if (curSlave) {
 					m_mapping->tab_input_registers[slave] = curSlave->getType();
 				} else {
-					m_mapping->tab_input_registers[slave] = 0;
+					m_mapping->tab_input_registers[slave] = DEFAULT_SUMMERY_VALUE;
 
 				}
 				slave++;
@@ -91,7 +92,7 @@ bool SummerySlave::init(void) {
 
 	logger->info("init");
 
-	m_mapping = modbus_mapping_new(0, 0, 0, 256);
+	m_mapping = modbus_mapping_new(0, 0, 0, DEFAULT_SUMMERY_COUNT);
 
 	///add handler
 	MultiRegisterHandler *Multi = NULL;
@@ -114,11 +115,12 @@ bool SummerySlave::init(void) {
 	 */
 
 	/// add all tmp data handler
-	for (i = 0; i < 255; i++) {
-		m_handlerlist[i] = Single;
+	for (i = 0; i < DEFAULT_SUMMERY_COUNT; i++) {
+		m_input_handlerlist[i] = Single;
 	}
 
 	logger->debug("init finished");
 	return true;
 }
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */

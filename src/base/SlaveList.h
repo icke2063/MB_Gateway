@@ -27,35 +27,42 @@
 #include <MBSlaveList.h>
 #include <MBVirtualRTUSlave.h>
 
-using namespace MB_Framework;
+using namespace icke2063::MB_Framework;
 
 #include <Mutex.h>
+#include <ThreadPool.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 
 class SlaveList: public MB_Framework::MBSlaveList {
 public:
 	SlaveList() {
-		p_slavelist_lock = new Mutex;
+		m_slavelist_lock.reset(new Mutex);
 	}
 
-	virtual ~SlaveList() {
-	}
-	;
+	virtual ~SlaveList() {}
 
-	virtual void addSlave(uint8_t index, MBVirtualRTUSlave *newSlave) {
-		if(newSlave == NULL)return;
-		boost::lock_guard<boost::mutex> lock(*((Mutex* )p_slavelist_lock)->getMutex()); //lock slavelist
+	virtual bool addSlave(MBVirtualRTUSlave *newSlave) {
+		MBVirtualRTUSlave *curSlave = dynamic_cast<MBVirtualRTUSlave*>(newSlave);
+		uint8_t index;
+
+		if(curSlave == NULL)return false;
+		index = curSlave->getSlaveAddr();
+		boost::lock_guard<boost::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex()); //lock slavelist
 
 		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave already added?
 		if (it == m_slavelist.end()) {
 			m_slavelist[index] = newSlave;
+			return true;
 		}
 
+		return false;
 	}
+
 	virtual MBVirtualRTUSlave *removeSlave(uint8_t index) {
 		MBVirtualRTUSlave* result = NULL;
-		boost::lock_guard<boost::mutex> lock(*((Mutex* )p_slavelist_lock)->getMutex()); //lock slavelist
+		boost::lock_guard<boost::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex()); //lock slavelist
 
 		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave in list?
 		if (it != m_slavelist.end()) {
@@ -80,8 +87,9 @@ public:
 		return NULL;
 	}
 
-	Mutex *getLock(){return (Mutex *)p_slavelist_lock;}
+	Mutex *getLock(){return (Mutex *)m_slavelist_lock.get();}
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* SLAVELIST_H_ */

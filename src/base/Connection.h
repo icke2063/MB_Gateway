@@ -32,11 +32,17 @@
 
 #include <VirtualRTUSlave.h>
 #include <Logger.h>
+#include <ThreadPool.h>
+using namespace icke2063::common_cpp;
 
-using namespace MB_Framework;
+
+using namespace icke2063::MB_Framework;
+using namespace icke2063::common_cpp;
+
+namespace icke2063 {
 namespace MB_Gateway {
 
-class Connection: public MB_Framework::MBConnection, public Logger{
+class Connection: public MBConnection,public FunctorInt, public Logger{
 
 	enum handleQuery_mode {
 		handleReadAccess = 0x00,
@@ -47,6 +53,8 @@ public:
 	Connection(modbus_t *ctx);
 	virtual ~Connection();
 
+	modbus_t *getConnInfo (void){return &m_ctx;}
+
 private:
 	virtual void functor_function(void);
 	bool m_connection_running;
@@ -55,7 +63,8 @@ private:
 
 	/* connection information from libmodbus library */
 	modbus_t m_ctx;
-
 };
-} /* namespace MB_Framework */
+} /* namespace MB_Gateway */
+} /* namespace icke2063 */
+
 #endif /* CONNECTION_H_ */

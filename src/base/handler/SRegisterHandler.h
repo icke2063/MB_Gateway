@@ -12,6 +12,7 @@
 
 #include <handler/MultiRegisterHandler.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 
 class SRegisterHandler: public MultiRegisterHandler {
@@ -21,4 +22,5 @@ public:
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* SREGISTERHANDLER_H_ */

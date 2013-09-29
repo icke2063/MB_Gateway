@@ -12,6 +12,7 @@
 
 #include <MultiByteHandler.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -27,4 +28,5 @@ public:
 
 } /* namespace I2C */
 }/* namespace MB_Gateway */
+}/* namespace icke2063 */
 #endif /* SINGLEREGISTERHANDLER_H_ */

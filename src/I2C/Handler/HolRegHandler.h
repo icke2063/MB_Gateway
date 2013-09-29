@@ -12,13 +12,14 @@
 
 #include <SingleRegisterHandler.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-class HolRegHandler: public MB_Gateway::I2C::SingleRegisterHandler {
+class HolRegHandler: public MultiByteHandler {
 public:
 	HolRegHandler(enum address_mode mode = _8bit) :
-			SingleRegisterHandler(mode) {
+		MultiByteHandler(mode) {
 		logger->info("HolRegHandler");
 		enableReadInpReg = false;
 	}
@@ -28,4 +29,5 @@ public:
 
 } /* namespace I2C */
 } /* namespace MB_Gateway */
+} /* namespace icke2063*/
 #endif /* HOLREGHANDLER_H_ */

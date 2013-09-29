@@ -14,6 +14,7 @@
 
 #include "modbus.h"
 
+namespace icke2063 {
 namespace MB_Gateway {
 
 class MultiRegisterHandler: public MB_Gateway::DefaultHandler {
@@ -34,4 +35,6 @@ private:
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
+
 #endif /* MULTIREGISTERHANDLER_H_ */

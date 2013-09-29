@@ -9,27 +9,34 @@ include_directories(
 ${CMAKE_CURRENT_BINARY_DIR}
 ${CMAKE_CURRENT_BINARY_DIR}/base
 ${CMAKE_CURRENT_SOURCE_DIR}/base
+${MB_Framework_SOURCE_DIR}/include
 )
 
 ## find extern lib
 find_library(MODBUS_LIB modbus)
 find_library(LOG4CPP log4cpp)
 #find_library(BOOST_LIB thread)
-FIND_PACKAGE(Boost COMPONENTS thread serialization REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS thread serialization program_options REQUIRED)
 
 
 ### ADD SOURCES ###
+#add common_sources
+set (COMMON_SOURCES
+	
+)
+
 #add default sources
 set (DEF_SOURCES
 	base/MB_Gateway.cpp
-	base/Logger.cpp
-	base/ThreadPool.cpp
-	base/WorkerThread.cpp
+	${common_cpp_SOURCE_DIR}/src/Logger.cpp
+	${common_cpp_SOURCE_DIR}/src/ThreadPool.cpp
+	${common_cpp_SOURCE_DIR}/src/WorkerThread.cpp
     base/Connection.cpp
     base/Server.cpp
     base/SummerySlave.cpp
     base/handler/DefaultHandler.cpp
     base/handler/MultiRegisterHandler.cpp
+    base/DummyFunctor.cpp
 	)
 
 #add I2C includes
@@ -57,6 +64,9 @@ add_executable (${PROJECT_NAME}
 				${I2C_SOURCES}
 )
 
+add_executable (testclient testclient/MBGateway_Testclient.cpp)
+
+
 ### ADD PREPROCESS MACROS ###
 
 ### LINK LIBRARIES ###
@@ -65,8 +75,13 @@ target_link_libraries(${PROJECT_NAME}
 	${MODBUS_LIB}
 	${Boost_LIBRARIES}
 	${LOG4CPP}
+	common_cpp
 )
 
+target_link_libraries(testclient
+	${MODBUS_LIB}
+	${Boost_LIBRARIES}
+)
 ### INSTALL ###
 
 INSTALL(TARGETS ${PROJECT_NAME}

@@ -27,34 +27,44 @@
 //std libs
 #include <stdint.h>
 #include <list>
+#include <auto_ptr.h>
 using namespace std;
+
+#include <boost/thread.hpp>
 
 //MB_Framework
 #include <MBServer.h>
-using namespace MB_Framework;
+using namespace icke2063::MB_Framework;
 
-#include <ThreadPool.h>
 #include <Logger.h>
+#include <ThreadPool.h>
+using namespace icke2063::common_cpp;
 
+namespace icke2063 {
 namespace MB_Gateway {
 
 class Server : public MBServer, public Logger{
 public:
-	Server(ThreadPool *pool, uint16_t port);
+	Server(uint16_t port);
 	virtual ~Server();
 
 private:
 	/**
-	 * server worker function for TreadPool
+	 * server thread function for
 	 */
-	void functor_function(void);
+	void waitForConnection(void);
+	void connection_handler(void);
+
+	auto_ptr<boost::thread> m_server_thread;
+	auto_ptr<boost::thread> m_conn_handler_thread;
 
 	bool m_server_running;
-
-//	ThreadPool *p_pool;
-
 	int m_server_socket;
+
+	auto_ptr<ThreadPool> pool;
+
 };
 
 } /* namespace MB_Gateway */
+} /* namespace icke2063 */
 #endif /* SERVER_H_ */

@@ -18,11 +18,12 @@ using namespace std;
 
 #include <Logger.h>
 #include <MultiByteHandler.h>
-using namespace MB_Framework;
+using namespace icke2063::MB_Framework;
 
 #include <I2CSlave.h>
 #include <HandlerParam.h>
 
+namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
@@ -53,11 +54,11 @@ public:
 
 class IOBoard_Slave: public I2C_Slave {
 public:
-	IOBoard_Slave(uint8_t SlaveID);
+	IOBoard_Slave(uint8_t SlaveAddr);
 	virtual ~IOBoard_Slave();
-	bool init(void);
+	virtual bool init(void);
 	void getSlaveInfo(void);
-	virtual uint8_t getType( void ){return 0x11;}
+	virtual uint8_t getType( void ){return SLAVE_ID;}
 
 private:
 	auto_ptr<DataHandler> TmpData;
@@ -66,4 +67,5 @@ private:
 
 } /* namespace I2C */
 }/* namespace MB_Gateway */
+}/* namespace icke2063 */
 #endif /* IOBOARDSLAVE_H_ */
