@@ -7,3 +7,6 @@
 [submodule "src/I2C/I2C_IO_BOARD.git"]
 	path = src/I2C/I2C_IO_BOARD.git
 	url = git@github.com:icke2063/I2C_IO_BOARD.git
+[submodule "common_cpp"]
+	path = common_cpp
+	url = git@github.com:icke2063/common_cpp.git
