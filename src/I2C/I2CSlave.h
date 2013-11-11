@@ -14,6 +14,8 @@
 #include <MultiByteHandler.h>
 #include <Logger.h>
 
+#define SLAVE_TYPE_I2C	0x10
+
 namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
@@ -37,7 +39,7 @@ public:
 	virtual ~I2C_Slave() {
 	}
 	virtual uint8_t getType(void) {
-		return 0x10;
+		return SLAVE_TYPE_I2C;
 	}
 
 	virtual bool init(void) {
