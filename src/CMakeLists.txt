@@ -16,7 +16,7 @@ ${MB_Framework_SOURCE_DIR}/include
 find_library(MODBUS_LIB modbus)
 find_library(LOG4CPP log4cpp)
 #find_library(BOOST_LIB thread)
-FIND_PACKAGE(Boost COMPONENTS thread serialization program_options REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS thread system serialization program_options REQUIRED)
 
 
 ### ADD SOURCES ###
@@ -27,18 +27,47 @@ set (COMMON_SOURCES
 
 #add default sources
 set (DEF_SOURCES
-	base/MB_Gateway.cpp
 	${common_cpp_SOURCE_DIR}/src/Logger.cpp
 	${common_cpp_SOURCE_DIR}/src/ThreadPool.cpp
 	${common_cpp_SOURCE_DIR}/src/WorkerThread.cpp
-    base/Connection.cpp
-    base/Server.cpp
-    base/SummerySlave.cpp
-    base/handler/DefaultHandler.cpp
-    base/handler/MultiRegisterHandler.cpp
-    base/DummyFunctor.cpp
-	)
+	base/Connection.cpp
+	base/Server.cpp
+	base/SummerySlave.cpp
+	base/handler/DefaultHandler.cpp
+	base/handler/MultiRegisterHandler.cpp
+	base/DummyFunctor.cpp
+)
+	
 
+#add webinterface	
+set(ECPPC "/usr/bin/ecppc")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/webinterface)
+FILE(GLOB ECPP_SRC "${CMAKE_CURRENT_SOURCE_DIR}/webinterface/pages/*.ecpp")
+
+set(PAGES_CPP_SRC webinterface/WebInterface.cpp)
+foreach(_file ${ECPP_SRC})
+	
+	#create outputfile absolute path
+    string(REPLACE ".ecpp" "" file_cpp ${_file})
+    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}" file_cpp ${file_cpp})
+    set(file_cpp "${file_cpp}.cpp")
+    
+    #createoutput directory
+    get_filename_component(cur_path ${file_cpp} PATH)
+    file(MAKE_DIRECTORY ${cur_path})
+  
+	#run tntnet compiler
+    add_custom_command(
+        OUTPUT ${file_cpp} 
+        COMMAND ${ECPPC} -v 
+            -I${CMAKE_CURRENT_SOURCE_DIR}/webinterface/pages
+            -I${CMAKE_CURRENT_SOURCE_DIR}/base
+            -o ${file_cpp} ${_file}
+        DEPENDS ${_file}
+    ) 
+    list(APPEND PAGES_CPP_SRC ${file_cpp})
+endforeach()	
+		
 #add I2C includes
 if (I2C_SUPPORT)
 	include_directories(
@@ -50,18 +79,19 @@ if (I2C_SUPPORT)
 	)
 	
 	set (I2C_SOURCES
-	I2C/IOBoardSlave.cpp
-	I2C/I2C-Comm/I2CComm.cpp
-	I2C/Handler/MultiByteHandler.cpp
-	I2C/I2CScanner.cpp
+	  I2C/IOBoardSlave.cpp
+	  I2C/I2C-Comm/I2CComm.cpp
+	  I2C/Handler/MultiByteHandler.cpp
+	  I2C/I2CScanner.cpp
 	)
 	
 endif (I2C_SUPPORT)
 
 ### ADD TARGET ###
-add_executable (${PROJECT_NAME}
-				${DEF_SOURCES}
-				${I2C_SOURCES}
+add_executable (${PROJECT_NAME} base/MB_Gateway.cpp
+  ${DEF_SOURCES}
+  ${PAGES_CPP_SRC}
+  ${I2C_SOURCES}
 )
 
 add_executable (testclient testclient/MBGateway_Testclient.cpp)
@@ -75,7 +105,9 @@ target_link_libraries(${PROJECT_NAME}
 	${MODBUS_LIB}
 	${Boost_LIBRARIES}
 	${LOG4CPP}
-	common_cpp
+	common_cpp-shared
+	tntnet
+	cxxtools
 )
 
 target_link_libraries(testclient
