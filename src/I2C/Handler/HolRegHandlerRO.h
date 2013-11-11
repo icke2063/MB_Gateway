@@ -10,16 +10,16 @@
 #ifndef HOLREGHANDLERRO_H_
 #define HOLREGHANDLERRO_H_
 
-#include <SingleRegisterHandler.h>
+#include <MultiByteHandler.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-class HolRegHandlerRO: public SingleRegisterHandler {
+class HolRegHandlerRO: public MultiByteHandler {
 public:
 	HolRegHandlerRO(enum address_mode mode = _8bit) :
-			SingleRegisterHandler(mode) {
+		MultiByteHandler(mode) {
 		logger->info("HolRegHandlerRO");
 		enableReadInpReg = false;
 	} //disable input register support
