@@ -185,7 +185,7 @@ void Server::connection_handler (void){
 					if(maxFD < curConn->getConnInfo()->s)maxFD = curConn->getConnInfo()->s;
 				}
 
-				if(curConn->getStatus() == MBConnection::closed){//remove closedn connection
+				if(curConn->getStatus() == MBConnection::closed){//remove closed connection
 					delete curConn;
 					conn_it = openConnections.erase(conn_it);
 				}
@@ -218,7 +218,7 @@ void Server::connection_handler (void){
 				if(curConn && FD_ISSET(curConn->getConnInfo()->s, &rfds)){//add open connection into set
 					curConn -> setStatus(MBConnection::busy);
 					//use threadpool
-					pool->addFunctor(curConn);
+					pool->addFunctor(curConn->getFunctor());
 				}
 				++conn_it;
 			}
