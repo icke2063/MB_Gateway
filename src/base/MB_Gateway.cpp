@@ -7,6 +7,7 @@
 //============================================================================
 
 #include <iostream>
+#include <auto_ptr.h>
 using namespace std;
 
 #include "boost/serialization/singleton.hpp"
@@ -15,6 +16,7 @@ using namespace std;
 
 #include <ThreadPool.h>
 #include <Server.h>
+#include <WebInterface.h>
 #include <SlaveList.h>
 #include <MBVirtualRTUSlave.h>
 using namespace icke2063::MB_Framework;
@@ -42,6 +44,8 @@ int8_t offset =1;
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(new SummerySlave(255));
 
 	scanner.reset(new icke2063::MB_Gateway::I2C::I2C_Scanner());
+
+	WebInterface webint;
 
 	while (1) {
 //		max_functor = 30;
