@@ -82,8 +82,11 @@ bool I2C_Comm::Write_I2C_Bytes(unsigned char DEVICE_ADDR, uint8_t *databuffer,
 	{
 		boost::lock_guard<boost::mutex> lock(*(i2cbus_lock.getMutex()));
 		if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
-			perror("Unable to send data");
-			return false;
+			usleep(10000);
+			if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
+				perror("Unable to send data");
+				return false;
+			}
 		}
 	}
 	return true;
@@ -117,8 +120,11 @@ bool I2C_Comm::Read_I2C_Bytes(unsigned char DEVICE_ADDR, uint8_t *databuffer,
 	{
 		boost::lock_guard<boost::mutex> lock(*(i2cbus_lock.getMutex()));
 		if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
-			perror("Unable to send data");
-			return false;
+			usleep(10000);
+			if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
+				perror("Unable to read data");
+				return false;
+			}
 		}
 
 	}
