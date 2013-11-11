@@ -306,50 +306,74 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen(
 			"/dev/i2c-1");
 
-	// get SlaveID
+	/* get SlaveID */
 	recvbuffer[0] = 0; //first high
 	recvbuffer[1] = 0; //second low
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, 2)) {
 		logger->info("IOBoard[0x%x]SlaveID:0x%x", getSlaveAddr(), recvbuffer[0]);
+
+		if(m_mapping){
+			memcpy(m_mapping->tab_registers,recvbuffer,2);	//store in DB
+		}
+	} else {
+		logger->error("IOBoard[0x%x] unable read SlaveID", getSlaveAddr());
 	}
 
-	// get Version
-	recvbuffer[0] = (VERSION_START >> 8); //first high
-	recvbuffer[1] = (VERSION_START & 0xff); //second low
+	/* get Version */
+	i2c_address = VERSION_START;
+	recvbuffer[0] = (i2c_address >> 8); //first high
+	recvbuffer[1] = (i2c_address & 0xff); //second low
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, VERSION_LENGTH)) {
 		recvbuffer[VERSION_LENGTH] = '\0';
-		logger->info("IOBoard[0x%x]Version:%s", getSlaveAddr(), recvbuffer);
+
+		if(m_mapping){
+			memcpy(&m_mapping->tab_registers[VERSION_START/2],recvbuffer,VERSION_LENGTH);	//store in DB
+			logger->info("IOBoard[0x%x]Version:%s", getSlaveAddr(), &m_mapping->tab_registers[VERSION_START/2]);
+		}
+	} else {
+		logger->error("IOBoard[0x%x] unable read version", getSlaveAddr());
 	}
 
-	// set virtual pin count address
-	recvbuffer[0] = (VIRTUAL_IO_COUNT >> 8); //first high
-	recvbuffer[1] = (VIRTUAL_IO_COUNT & 0xff); //second low
+	/* get virtual pin count */
+	i2c_address = VIRTUAL_IO_COUNT;
+	recvbuffer[0] = (i2c_address >> 8); //first high
+	recvbuffer[1] = (i2c_address & 0xff); //second low
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, 2)) {
 		pincount = recvbuffer[0];
-		logger->info("IOBoard[0x%x] pincount:%i", getSlaveAddr(), pincount);
+		if(m_mapping){
+			memcpy(&m_mapping->tab_registers[VIRTUAL_IO_COUNT/2],recvbuffer,2);	//store in DB
+			logger->info("IOBoard[0x%x] pincount:%i", getSlaveAddr(), m_mapping->tab_registers[VIRTUAL_IO_COUNT/2]);
+		}
 	} else {
 		logger->error("IOBoard[0x%x] unable read pincount", getSlaveAddr());
-		return;
 	}
 
-	// get virtual pin functions
-	recvbuffer[0] = (((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START)) >> 8); //first high
-	recvbuffer[1] = (((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START)) & 0xff); //second low
-	logger->debug("function:0x%x", ((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START)));
+	/* get virtual pin functions */
+	i2c_address = ((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START));
+	recvbuffer[0] = ( i2c_address >> 8); //first high
+	recvbuffer[1] = ( i2c_address & 0xff); //second low
+	logger->debug("function:0x%x", i2c_address);
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, pincount * 2)) {
-		for (i = 0; i < pincount; i++) {
-			logger->info("function[%i]:0x%x", i, recvbuffer[(i * 2) + 1]);
+
+		if(m_mapping){	// write values into DB
+			memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,pincount * 2);	//store in DB
+			for (i = 0; i < pincount; i++) {
+				logger->info("function[%i]:0x%x", (i2c_address/2)+(i*2), m_mapping->tab_registers[(i2c_address/2)+(i*2)]);
+			}
 		}
+	} else {
+		logger->error("IOBoard[0x%x] unable read func codes", getSlaveAddr());
 	}
 
+	/* get virtual pin names */
 	for (i = 0; i < pincount; i++) {
 		i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 				+ (i * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
@@ -362,10 +386,13 @@ void IOBoard_Slave::getSlaveInfo(void) {
 				getSlaveAddr(), recvbuffer, _16bit,
 				IO_BOARD_MAX_IO_PIN_NAME_LENGTH)) {
 			recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0';
-			logger->info("name[%i]:%s", i, recvbuffer);
-		}
-	}
 
+			if(m_mapping){
+				memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,IO_BOARD_MAX_IO_PIN_NAME_LENGTH);	//store in DB
+				logger->info("name[%i]:%s", i, recvbuffer);
+			}
+		}//if(I2C)
+	}//for(names)
 }
 
 } /* namespace I2C */
