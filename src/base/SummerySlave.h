@@ -18,6 +18,8 @@
 //own lib
 #include <Logger.h>
 
+#define SLAVE_TYPE_SUMMERY	0x01
+
 #define DEFAULT_SUMMERY_TIMEOUT_MS	1000
 #define DEFAULT_SUMMERY_ADDR	255
 #define DEFAULT_SUMMERY_COUNT	256
@@ -33,7 +35,7 @@ class SummerySlave: public VirtualRTUSlave, public Logger {
 public:
 	SummerySlave(uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
 	virtual ~SummerySlave();
-	virtual uint8_t getType( void ){return 0x01;}
+	virtual uint8_t getType( void ){return SLAVE_TYPE_SUMMERY;}
 
 private:
 	bool init(void);
