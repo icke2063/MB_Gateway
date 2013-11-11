@@ -50,9 +50,17 @@ public:
 
 private:
 	/**
-	 * server thread function for
+	 * server thread function
+	 * - accept incoming connect requests
+	 * - create new Connection objects
 	 */
 	void waitForConnection(void);
+
+	/**
+	 * Thread function to handle all connections.
+	 * - one select for all open connections
+	 * - remove finished connections
+	 */
 	void connection_handler(void);
 
 	auto_ptr<boost::thread> m_server_thread;
