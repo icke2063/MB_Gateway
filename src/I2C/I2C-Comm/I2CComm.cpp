@@ -23,7 +23,7 @@ namespace MB_Gateway {
 namespace I2C {
 
 I2C_Comm::I2C_Comm() :
-		m_i2cFD(-1), m_path("") {
+		m_i2cFD(-1), m_path(""), m_open_i2c_bus(false) {
 	resetLivelist();
 
 }
@@ -33,13 +33,17 @@ I2C_Comm::~I2C_Comm() {
 }
 
 bool I2C_Comm::i2cOpen(std::string path) {
-	if (path.compare(m_path) != 0) {
+	if (path.compare(m_path) != 0) {//only open new connections
 		if (m_i2cFD > 0)
 			i2cClose(); //close existing connection
 
-		m_path = path;
-		if (((m_i2cFD = open(m_path.c_str(), O_RDWR))) < 0)
+
+		if (((m_i2cFD = open(path.c_str(), O_RDWR))) < 0){
 			return false; //open new connection
+		}
+		m_path = path;
+		m_open_i2c_bus = true;
+		return true;
 	}
 	return true;
 }

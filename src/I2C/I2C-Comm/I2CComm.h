@@ -34,6 +34,16 @@ public:
 	virtual ~I2C_Comm();
 
 	// Initialize functions
+
+	/**
+	 * open i2c bus with stored path
+	 */
+	bool i2cOpen(){return m_open_i2c_bus;}
+	/**
+	 * open i2c bus with given path
+	 * - store given path
+	 * - reopen i2cbus if different path as already stored
+	 */
 	bool i2cOpen(std::string path); // open i2cbus at given path
 	void i2cClose(); // close i2cbus
 	bool i2cSetAddress(unsigned char address); // changes slave address
@@ -53,6 +63,7 @@ public:
 private:
 	int m_i2cFD; //file deskriptor for I2C connection
 	std::string m_path;
+	bool m_open_i2c_bus;
 
 	void resetLivelist(void);
 	bool livelist[MAX_I2C_SLAVE_ADR]; //list of found I2C slaves
