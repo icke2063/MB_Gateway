@@ -14,7 +14,10 @@
 using namespace std;
 
 
+
 #include "I2C_IO_BOARD.git/base/inc/slave_eeprom_mapping.h"
+
+#define SLAVE_TYPE_IOBOARD	SLAVE_ID
 
 #include <Logger.h>
 #include <MultiByteHandler.h>
@@ -57,8 +60,12 @@ public:
 	IOBoard_Slave(uint8_t SlaveAddr);
 	virtual ~IOBoard_Slave();
 	virtual bool init(void);
+
+	/**
+	 * read all (almost) static infos from I2C IO board and store it in DB
+	 */
 	void getSlaveInfo(void);
-	virtual uint8_t getType( void ){return SLAVE_ID;}
+	virtual uint8_t getType( void ){return SLAVE_TYPE_IOBOARD;}
 
 private:
 	auto_ptr<DataHandler> TmpData;
