@@ -30,8 +30,7 @@ SummerySlave::SummerySlave(uint8_t SlaveAddr, unsigned int timeout) :
 
 	init();
 
-	boost::thread t1(boost::bind(&SummerySlave::thread_function, this)); // create new scheduler thread
-	p_scanner_thread = &t1; // save pointer of thread object
+	p_scanner_thread.reset(new boost::thread(&SummerySlave::thread_function, this)); // create new scheduler thread
 
 }
 
@@ -39,7 +38,7 @@ SummerySlave::~SummerySlave() {
 	logger->info("SummerySlave");
 	m_running = false;
 	m_Condition.notify_all();
-	if(p_scanner_thread)p_scanner_thread->join();
+	if(p_scanner_thread.get() && p_scanner_thread->joinable())p_scanner_thread->join();
 }
 
 void SummerySlave::thread_function(void) {

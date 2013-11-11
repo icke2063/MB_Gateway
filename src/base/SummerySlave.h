@@ -38,7 +38,7 @@ public:
 private:
 	bool init(void);
 
-	boost::thread* p_scanner_thread;
+	auto_ptr<boost::thread> p_scanner_thread;
 	bool m_running;
 
 	virtual void thread_function (void);
