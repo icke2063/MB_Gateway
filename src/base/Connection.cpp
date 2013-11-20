@@ -31,11 +31,11 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <string.h>
+#include <memory>
+using namespace std;
 
 //boost
 #include <boost/serialization/singleton.hpp>
-#include <boost/thread/thread.hpp>
-using namespace boost::serialization;
 
 #include <modbus-tcp.h>
 
@@ -51,7 +51,7 @@ Connection::Connection(modbus_t *ctx) :
 
 	logger = &log4cpp::Category::getInstance(std::string("connection"));
 	logger->setPriority(log4cpp::Priority::DEBUG);
-	//if (console)logger->addAppender(console);
+	if (console)logger->addAppender(console);
 
 	logger->info("Connection\n");
 
@@ -59,13 +59,13 @@ Connection::Connection(modbus_t *ctx) :
 	if (ctx != NULL) {
 		m_ctx = *ctx;
 		m_connection_running = true;
-		m_status = MBConnection::open;
+		m_conn_lock = shared_ptr<std::mutex>(new std::mutex());
 	}
 }
 
 Connection::~Connection() {
 	logger->info("~Connection\n");
-	boost::lock_guard<boost::mutex> lock(lock_conn);
+	std::lock_guard<std::mutex> lock(*m_conn_lock.get());
 
 	/* Connection closed by the client or error */
 	if(m_connection_running){
@@ -93,7 +93,7 @@ bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
 	function = query[offset];
 	address = (query[offset + 1] << 8) + query[offset + 2];
 	cur_address = address;
-	map<uint16_t,MBHandlerInt*> *cur_handlerlist = NULL;
+	map<uint16_t,shared_ptr<MBHandlerInt>> *cur_handlerlist = nullptr;
 
 	/* get data count */
 	switch (function) {
@@ -131,9 +131,10 @@ bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
 
 		if (cur_handlerlist->size() > 0) {
 			/* get handlerfunction of current address */
-			map<uint16_t, MBHandlerInt*>::iterator handler_it =
+			map<uint16_t, shared_ptr<MBHandlerInt>>::iterator handler_it =
 					cur_handlerlist->find(cur_address); //try to find slavehandlers
 			if (handler_it != cur_handlerlist->end()) {
+			  shared_ptr<MBHandlerInt> tmpHandler = handler_it->second;
 				logger->debug("found handler");
 				HandlerParam * param = new HandlerParam(slave, function,
 						cur_address, count - register_done,
@@ -143,7 +144,7 @@ bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
 					logger->debug("handleReadAccess[0x%x]", cur_address);
 					//call handleReadAccess function
 					if ((handler_retval =
-							(*handler_it).second->handleReadAccess(param))
+							tmpHandler.get()->handleReadAccess(param))
 							> 0) {
 						logger->debug("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
@@ -221,9 +222,10 @@ void Connection::ConnFunctor::functor_function(void) {
 	uint8_t function;
 
 
+	
 	Connection *p_curConn = dynamic_cast<Connection*>(p_conn);	//cast given pointer
 	if(p_curConn == NULL)return;								//check existence of parent class
-	boost::lock_guard<boost::mutex> lock(*(p_curConn->getLock()));	//lock parent class
+	std::lock_guard<std::mutex> lock(*(p_curConn->getLock().get()));	//lock parent class
 
 
 	p_ctx = p_curConn->getConnInfo();
@@ -245,8 +247,8 @@ void Connection::ConnFunctor::functor_function(void) {
 		p_curConn->logger->debug("query[function]:0x%x", function);
 		{
 			///lock list access @todo use shared lock
-			boost::lock_guard<boost::mutex> lock(
-					*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex()));
+			std::lock_guard<std::mutex> lock(
+					*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex().get()));
 
 			VirtualRTUSlave *tmp_slave =
 					dynamic_cast<VirtualRTUSlave *>(boost::serialization::singleton<
@@ -314,9 +316,9 @@ void Connection::ConnFunctor::functor_function(void) {
 			}
 		}
 
-		p_curConn->m_status = open;
+		p_curConn->setStatus(open);
 	} else {
-		p_curConn->m_status = closed;
+		p_curConn->setStatus(closed);
 	}
 }
 

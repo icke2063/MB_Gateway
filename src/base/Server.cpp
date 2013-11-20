@@ -27,10 +27,11 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <thread>
 using namespace std;
 
 #include <sys/select.h>
-#include <boost/thread.hpp>
+
 
 // libmodbus
 #include "modbus.h"
@@ -62,8 +63,8 @@ Server::Server(uint16_t port):
 	pool.reset(new ThreadPool());	//get new ThreadPool
 	pool->setHighWatermark(5);
 
-	m_server_thread.reset(new boost::thread(&Server::waitForConnection, this));	// create new scheduler thread
-	m_conn_handler_thread.reset(new boost::thread(&Server::connection_handler, this));
+	m_server_thread.reset(new std::thread(&Server::waitForConnection, this));	// create new scheduler thread
+	m_conn_handler_thread.reset(new std::thread(&Server::connection_handler, this));
 }
 
 Server::~Server() {
@@ -137,8 +138,8 @@ void Server::waitForConnection(void){
 			logger->debug("modbus_tcp_accept:%i",ctx_tmp->s);
 
 			if(m_conn_lock.get() != NULL){
-				boost::lock_guard<boost::mutex> lock(*((MB_Gateway::Mutex*)m_conn_lock.get())->getMutex());
-				openConnections.push_back(new Connection(ctx_tmp));
+				std::lock_guard<std::mutex> lock(*((MB_Gateway::Mutex*)m_conn_lock.get())->getMutex().get());
+				openConnections.push_back(shared_ptr<Connection>(new Connection(ctx_tmp)));
 			}
 			modbus_free(ctx_tmp);
 		}else
@@ -158,7 +159,7 @@ void Server::connection_handler (void){
     int maxFD=0;
     struct timeval tv;
     int retval;
-    list<MBConnection*>::iterator conn_it;
+    list<shared_ptr<MBConnection>>::iterator conn_it;
     Connection *curConn = NULL;
 
 
@@ -173,12 +174,13 @@ void Server::connection_handler (void){
 
 
 		if(m_conn_lock.get() != NULL){
-			boost::lock_guard<boost::mutex> lock(*((MB_Gateway::Mutex*)m_conn_lock.get())->getMutex());
+			std::lock_guard<std::mutex> lock(*((MB_Gateway::Mutex*)m_conn_lock.get())->getMutex().get());
 
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				curConn =  dynamic_cast<MB_Gateway::Connection *> (*conn_it);
+				shared_ptr<MBConnection> tmpConn = *conn_it;
+				curConn =  dynamic_cast<MB_Gateway::Connection *> (tmpConn.get());
 
 				if(curConn && curConn->getStatus() == MBConnection::open){//add open connection into set
 					FD_SET(curConn->getConnInfo()->s, &rfds);
@@ -186,8 +188,10 @@ void Server::connection_handler (void){
 				}
 
 				if(curConn->getStatus() == MBConnection::closed){//remove closed connection
-					delete curConn;
+					logger->debug("remove Connection\n");
+					//delete curConn;
 					conn_it = openConnections.erase(conn_it);
+					continue;
 				}
 				++conn_it;
 			}
@@ -213,7 +217,8 @@ void Server::connection_handler (void){
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				curConn =  dynamic_cast<MB_Gateway::Connection *> (*conn_it);
+				shared_ptr<MBConnection> tmpConn = *conn_it;
+				curConn =  dynamic_cast<MB_Gateway::Connection *> (tmpConn.get());
 
 				if(curConn && FD_ISSET(curConn->getConnInfo()->s, &rfds)){//add open connection into set
 					curConn -> setStatus(MBConnection::busy);

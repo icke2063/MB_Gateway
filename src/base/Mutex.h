@@ -10,8 +10,11 @@
 #ifndef MUTEX_H_
 #define MUTEX_H_
 
-#include <boost/thread.hpp>
 #include <MBMutex.h>
+
+#include <mutex>
+#include <memory>
+using namespace std;
 
 using namespace icke2063::MB_Framework;
 
@@ -20,13 +23,13 @@ namespace MB_Gateway {
 
 class Mutex: public MB_Framework::MBMutex {
 public:
-	Mutex(){};
+	Mutex(){m_mutex = shared_ptr<std::mutex>(new std::mutex());}
 	virtual ~Mutex(){};
 
-	virtual boost::mutex *getMutex(void){return &m_mutex;}
+	virtual shared_ptr<std::mutex> getMutex(void){return m_mutex;}
 
 private:
-	boost::mutex m_mutex;
+	shared_ptr<std::mutex> m_mutex;
 };
 
 } /* namespace MB_Gateway */

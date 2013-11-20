@@ -10,12 +10,16 @@
 #ifndef SUMMERYSLAVE_H_
 #define SUMMERYSLAVE_H_
 
-#include <VirtualRTUSlave.h>
+//std lib
+#include <memory>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
+using namespace std;
 
-//ext lib
-#include <boost/thread.hpp>
 
 //own lib
+#include <VirtualRTUSlave.h>
 #include <Logger.h>
 
 #define SLAVE_TYPE_SUMMERY	0x01
@@ -40,14 +44,14 @@ public:
 private:
 	bool init(void);
 
-	auto_ptr<boost::thread> p_scanner_thread;
+	unique_ptr<std::thread> p_scanner_thread;
 	bool m_running;
 
 	virtual void thread_function (void);
-
-    boost::condition_variable m_Condition;  // Condition variable for timed_wait
-    boost::mutex m_Mutex;                   // Mutex
-    unsigned int m_timeout;
+	
+	std::condition_variable m_Condition;  // Condition variable for timed_wait
+	std::mutex m_Mutex;                   // Mutex
+	unsigned int m_timeout;
 };
 
 } /* namespace MB_Gateway */

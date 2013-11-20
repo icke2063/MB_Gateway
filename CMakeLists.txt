@@ -17,6 +17,16 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/common_cpp/include
 )
 
+if(UNIX)
+ #   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+endif()
+
+#enable c++11
+ADD_DEFINITIONS(
+    -std=c++0x # Or -std=c++11
+#    # Other flags
+)
+
 add_subdirectory (common_cpp)
 add_subdirectory (MB_Framework)
 

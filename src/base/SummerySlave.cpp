@@ -7,6 +7,10 @@
  * Detailed description of file.
  */
 
+#include <thread>
+#include <chrono>
+using namespace std;
+
 #include "SummerySlave.h"
 #include <handler/MultiRegisterHandler.h>
 #include <handler/SRegisterHandler.h>
@@ -19,8 +23,7 @@ namespace icke2063 {
 namespace MB_Gateway {
 
 SummerySlave::SummerySlave(uint8_t SlaveAddr, unsigned int timeout) :
-		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true),
-		p_scanner_thread(NULL), m_timeout(timeout){
+		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true), m_timeout(timeout){
 	logger = &log4cpp::Category::getInstance(std::string("SummerySlave"));
 	logger->setPriority(log4cpp::Priority::DEBUG);
 	//if (console)logger->addAppender(console);
@@ -30,8 +33,8 @@ SummerySlave::SummerySlave(uint8_t SlaveAddr, unsigned int timeout) :
 
 	init();
 
-	p_scanner_thread.reset(new boost::thread(&SummerySlave::thread_function, this)); // create new scheduler thread
-
+	p_scanner_thread.reset(new std::thread(&SummerySlave::thread_function, this)); // create new scheduler thread
+	
 }
 
 SummerySlave::~SummerySlave() {
@@ -48,11 +51,11 @@ void SummerySlave::thread_function(void) {
 	logger->debug("Summery Thread");
 
 	while (m_running) {
-		p_scanner_thread->yield();
-		boost::mutex::scoped_lock lock(m_Mutex);
+		//p_scanner_thread->yield();
+		std::unique_lock<std::mutex> lock(m_Mutex);
 
-		if (!m_Condition.timed_wait(lock,
-				boost::posix_time::milliseconds(m_timeout))) {
+		if (m_Condition.wait_for(lock,
+				std::chrono::milliseconds(m_timeout)) == std::cv_status::timeout ) {
 			logger->debug("scan slaves...");
 			logger->debug("slavelist size: %d",boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size());
 
@@ -95,7 +98,7 @@ bool SummerySlave::init(void) {
 
 	///add handler
 	MultiRegisterHandler *Multi = NULL;
-	SRegisterHandler *Single = NULL;
+	shared_ptr<SRegisterHandler> Single;
 
 	/*
 	 * create new specialist handler if not already in list
@@ -105,8 +108,8 @@ bool SummerySlave::init(void) {
 		Multi = new MultiRegisterHandler(m_mapping); //virtual IO Port handler
 	}
 
-	if (Single == NULL) {
-		Single = new SRegisterHandler(m_mapping); //virtual IO Port handler
+	if (Single == nullptr) {
+		Single = shared_ptr<SRegisterHandler>(new SRegisterHandler(m_mapping)); //virtual IO Port handler
 	}
 
 	/**

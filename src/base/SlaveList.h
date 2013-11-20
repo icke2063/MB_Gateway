@@ -49,7 +49,7 @@ public:
 
 		if(curSlave == NULL)return false;
 		index = curSlave->getSlaveAddr();
-		boost::lock_guard<boost::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex()); //lock slavelist
+		std::lock_guard<std::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex().get()); //lock slavelist
 
 		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave already added?
 		if (it == m_slavelist.end()) {
@@ -62,7 +62,7 @@ public:
 
 	virtual MBVirtualRTUSlave *removeSlave(uint8_t index) {
 		MBVirtualRTUSlave* result = NULL;
-		boost::lock_guard<boost::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex()); //lock slavelist
+		std::lock_guard<std::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex().get()); //lock slavelist
 
 		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave in list?
 		if (it != m_slavelist.end()) {

@@ -7,6 +7,8 @@
  * Detailed description of file.
  */
 
+#include <string.h>
+
 #include "boost/serialization/singleton.hpp"
 
 #include <I2CScanner.h>
@@ -31,7 +33,7 @@ I2C_Scanner::I2C_Scanner(unsigned int timeout) :
 	logger->setPriority(log4cpp::Priority::DEBUG);
 	//if (console)logger->addAppender(console);
 
-	m_scanner_thread.reset(new boost::thread(&I2C_Scanner::thread_function, this)); // create new scheduler thread
+	m_scanner_thread.reset(new std::thread(&I2C_Scanner::thread_function, this)); // create new scheduler thread
 
 	logger->info("I2C_Scanner");
 	logger->debug("m_timeout: %d",m_timeout);
@@ -62,12 +64,11 @@ void I2C_Scanner::thread_function(void) {
 	MBVirtualRTUSlave *curSlave;
 
 	while (m_running) {
-		m_scanner_thread->yield();
+//		m_scanner_thread->yield();	
+		std::unique_lock<std::mutex> lock(m_Mutex);
 
-		boost::mutex::scoped_lock lock(m_Mutex);
-
-		if (!m_Condition.timed_wait(lock,
-				boost::posix_time::milliseconds(m_timeout))) {	// wait a little bit
+		if (m_Condition.wait_for(lock,
+				std::chrono::milliseconds(m_timeout)) == std::cv_status::timeout) {	// wait a little bit
 
 			I2C::I2C_Comm *i2cbus = &(boost::serialization::singleton<
 					I2C::I2C_Comm>::get_mutable_instance());

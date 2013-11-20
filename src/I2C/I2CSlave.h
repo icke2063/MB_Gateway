@@ -10,6 +10,9 @@
 #ifndef I2CSLAVE_H_
 #define I2CSLAVE_H_
 
+#include <memory>
+using namespace std;
+
 #include <VirtualRTUSlave.h>
 #include <MultiByteHandler.h>
 #include <Logger.h>
@@ -55,8 +58,8 @@ public:
 		 */
 		// add all tmp data handler
 		for (i = 0; i < 127; i++) {
-			m_input_handlerlist[i] = Multi.get();
-			m_holding_handlerlist[i] = Multi.get();
+			m_input_handlerlist[i] = Multi;
+			m_holding_handlerlist[i] = Multi;
 			logger->debug("add Multi handler[0x%x]", i);
 		}
 
@@ -65,7 +68,7 @@ public:
 	}
 
 protected:
-	auto_ptr<MultiByteHandler> Multi;
+	shared_ptr<MultiByteHandler> Multi;
 
 };
 

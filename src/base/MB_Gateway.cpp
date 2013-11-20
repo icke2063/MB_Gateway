@@ -7,22 +7,27 @@
 //============================================================================
 
 #include <iostream>
-#include <auto_ptr.h>
+#include <unistd.h>
+#include <stdint.h>
+
+#include <memory>
 using namespace std;
 
 #include "boost/serialization/singleton.hpp"
 
 #include <build_options.h>
 
-#include <ThreadPool.h>
+//#include <ThreadPool.h>
 #include <Server.h>
-#include <WebInterface.h>
 #include <SlaveList.h>
-#include <MBVirtualRTUSlave.h>
+#include <SummerySlave.h>
+
+#include <WebInterface.h>
+//#include <MBVirtualRTUSlave.h>
 using namespace icke2063::MB_Framework;
 
-#include <SummerySlave.h>
-#include <DummyFunctor.h>
+
+//#include <DummyFunctor.h>
 
 #ifdef I2C_SUPPORT
 	#include <I2CScanner.h>
@@ -30,22 +35,22 @@ using namespace icke2063::MB_Framework;
 
 using namespace icke2063::MB_Gateway;
 
+
 int main() {
 int8_t max_functor = 1;
 int8_t offset =1;
 
-	auto_ptr<Server> default_server;
-	auto_ptr<Server> custom_server;
-	auto_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner;
+  printf("crumby\n");
 
-
-	default_server.reset(new Server(502));
-
+	unique_ptr<Server> default_server(new Server(502));
+//	auto_ptr<Server> custom_server;
+#ifdef I2C_SUPPORT
+	unique_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
+#endif
+	unique_ptr<WebInterface> webint(new WebInterface());
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(new SummerySlave(255));
 
-	scanner.reset(new icke2063::MB_Gateway::I2C::I2C_Scanner());
-
-	WebInterface webint;
+//	
 
 	while (1) {
 //		max_functor = 30;

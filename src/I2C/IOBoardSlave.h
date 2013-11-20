@@ -10,7 +10,7 @@
 #ifndef IOBOARDSLAVE_H_
 #define IOBOARDSLAVE_H_
 
-#include <auto_ptr.h>
+#include <memory>
 using namespace std;
 
 
@@ -68,8 +68,8 @@ public:
 	virtual uint8_t getType( void ){return SLAVE_TYPE_IOBOARD;}
 
 private:
-	auto_ptr<DataHandler> TmpData;
-	auto_ptr<DataHandler> PermData;
+	shared_ptr<DataHandler> TmpData;
+	shared_ptr<DataHandler> PermData;
 };
 
 } /* namespace I2C */

@@ -9,11 +9,13 @@
 
 #include <IOBoardSlave.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <HandlerList.h>
 #include <I2CComm.h>
 
 #include "boost/serialization/singleton.hpp"
+#include <boost/iterator/iterator_concepts.hpp>
 #include "MultiByteHandler.h"
 #include "SingleRegisterHandler.h"
 #include "HolRegHandler.h"
@@ -158,42 +160,43 @@ bool IOBoard_Slave::init(void) {
 	}
 
 	///add handler
-	MultiByteHandler *Multi = NULL;
-	SingleRegisterHandler *Single = NULL;
-	VersionHandler *Version = NULL;
-	HolRegHandler *Holding = NULL;
-	HolRegHandlerRO *HoldingRO = NULL;
+	shared_ptr<MultiByteHandler> Multi;
+	shared_ptr<SingleRegisterHandler> Single;
+	shared_ptr<VersionHandler> Version;
+	shared_ptr<HolRegHandler> Holding;
+	shared_ptr<HolRegHandlerRO> HoldingRO;
 
-	boost::lock_guard<boost::mutex> lock(
-			*(((Mutex*)(boost::serialization::singleton<HandlerList>::get_mutable_instance().m_handlerlist_lock.get()))->getMutex()));
-	list<MBHandlerInt*> *phandlerlist = &(boost::serialization::singleton<
+	std::lock_guard<std::mutex> lock(
+			*(((Mutex*)(boost::serialization::singleton<HandlerList>::get_mutable_instance().m_handlerlist_lock.get()))->getMutex().get()));
+	list<shared_ptr<MBHandlerInt>> *phandlerlist = &(boost::serialization::singleton<
 			HandlerList>::get_mutable_instance().m_handlerlist);
 
-	list<MBHandlerInt*>::iterator handler_it = phandlerlist->begin(); // get first handler
+	list<shared_ptr<MBHandlerInt>>::iterator handler_it = phandlerlist->begin(); // get first handler
 
 	while (handler_it != phandlerlist->end()) {
+	  shared_ptr<MBHandlerInt> listitem =*handler_it;
 		/* MultiByte */
-		if (Multi == NULL) {
-			Multi = dynamic_cast<MultiByteHandler*>(*handler_it);
+		if (Multi.get() == nullptr ) {
+			Multi = dynamic_pointer_cast<MultiByteHandler>(listitem);
 		}
 		/* SingleRegister */
-		if (Single == NULL) {
-			Single = dynamic_cast<SingleRegisterHandler*>(*handler_it);
+		if (Single.get() == nullptr) {
+			Single = dynamic_pointer_cast<SingleRegisterHandler>(listitem);
 		}
 
 		/* HolRegHandler */
-		if (Holding == NULL) {
-			Holding = dynamic_cast<HolRegHandler*>(*handler_it);
+		if (Holding.get() == nullptr ) {
+			Holding = dynamic_pointer_cast<HolRegHandler>(listitem);
 		}
 
 		/* HolRegHandlerRO */
-		if (HoldingRO == NULL) {
-			HoldingRO = dynamic_cast<HolRegHandlerRO*>(*handler_it);
+		if (HoldingRO.get() == nullptr ) {
+			HoldingRO = dynamic_pointer_cast<HolRegHandlerRO>(listitem);
 		}
 
 		/* VersionHandler */
-		if (Version == NULL) {
-			Version = dynamic_cast<VersionHandler*>(*handler_it);
+		if (Version.get() == nullptr ) {
+			Version = dynamic_pointer_cast<VersionHandler>(listitem);
 		}
 
 		++handler_it;
@@ -203,28 +206,29 @@ bool IOBoard_Slave::init(void) {
 	 * create new specialist handler if not already in list
 	 */
 
-	if (Multi == NULL) {
-		Multi = new MultiByteHandler(); //virtual IO Port handler
+	if (Multi.get() == nullptr) {
+		Multi = shared_ptr<MultiByteHandler>(new MultiByteHandler());
 		phandlerlist->push_back(Multi);
 	}
 
-	if (Single == NULL) {
-		Single = new SingleRegisterHandler(); //virtual IO Port handler
+	if (Single.get() == nullptr) {
+		Single = shared_ptr<SingleRegisterHandler>(new SingleRegisterHandler());
 		phandlerlist->push_back(Single);
 	}
 
-	if (Holding == NULL) {
-		Holding = new HolRegHandler(_16bit); //virtual IO Port handler
+	if (Holding.get() == nullptr) {
+		Holding = shared_ptr<HolRegHandler>(new HolRegHandler(_16bit)); //virtual IO Port handler
 		phandlerlist->push_back(Holding);
 	}
 
-	if (HoldingRO == NULL) {
-		HoldingRO = new HolRegHandlerRO(_16bit);
+	if (HoldingRO.get() == nullptr) {
+	  shared_ptr<HolRegHandlerRO> tmp(new HolRegHandlerRO(_16bit));
+		HoldingRO = tmp;
 		phandlerlist->push_back(HoldingRO);
 	}
 
-	if (Version == NULL) {
-		Version = new VersionHandler();
+	if (Version.get() == nullptr) {
+		Version = shared_ptr<VersionHandler>(new VersionHandler());
 		phandlerlist->push_back(Version);
 	}
 
@@ -253,7 +257,7 @@ bool IOBoard_Slave::init(void) {
 	/// add all tmp data handler
 	for (i = 0; i < pincount; i++) {
 		handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
-		m_holding_handlerlist[handler_address] = TmpData.get();
+		m_holding_handlerlist[handler_address] = TmpData;
 		logger->debug("add TmpData handler[0x%x]", handler_address);
 	}
 
@@ -263,7 +267,7 @@ bool IOBoard_Slave::init(void) {
 	/// add all perm data handler
 	for (i = 0; i < pincount; i++) {
 		handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2) + (i * 2);
-		m_holding_handlerlist[handler_address] = PermData.get();
+		m_holding_handlerlist[handler_address] = PermData;
 		logger->debug("add PermData handler[0x%x]", handler_address);
 	}
 

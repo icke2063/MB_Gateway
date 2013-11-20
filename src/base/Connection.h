@@ -24,6 +24,10 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
+#include <memory>
+#include <mutex>
+using namespace std;
+
 #include <MBConnection.h>
 
 // libmodbus
@@ -50,12 +54,17 @@ class Connection: public MBConnection, public Logger{
 	 */
 	class ConnFunctor: public FunctorInt{
 	public:
-		ConnFunctor(Connection *conn):p_conn(conn){}
+		ConnFunctor(Connection *conn):p_conn(conn){
+		  p_conn_status = conn->m_status;
+		  p_conn_lock = conn->m_conn_lock;
+		}
 		virtual ~ConnFunctor(){}
 
 	private:
 		virtual void functor_function(void);
 		Connection *p_conn;
+		shared_ptr<enum conn_status> p_conn_status;
+		shared_ptr<std::mutex> p_conn_lock;
 	};
 
 	friend class ConnFunctor;	//ok lets play together ;-)
@@ -70,7 +79,7 @@ public:
 	Connection(modbus_t *ctx);
 	virtual ~Connection();
 	modbus_t *getConnInfo (void){return &m_ctx;}
-	boost::mutex *getLock(){return &lock_conn;}
+	shared_ptr<std::mutex> getLock(){return m_conn_lock;}
 	/**
 	 * Threadpool functor creator
 	 * create functor object for ThreadPool handling
@@ -78,7 +87,7 @@ public:
 	 * - use functions of this class to handle query
 	 * @return
 	 */
-	FunctorInt *getFunctor( void ){return new Connection::ConnFunctor(this);}
+	shared_ptr<FunctorInt> getFunctor( void ){return shared_ptr<FunctorInt>(new Connection::ConnFunctor(this));}
 
 private:
 	bool m_connection_running;
@@ -94,7 +103,7 @@ private:
 
 	/* connection information from libmodbus library */
 	modbus_t m_ctx;
-	boost::mutex lock_conn;
+	shared_ptr<std::mutex> m_conn_lock;
 };
 } /* namespace MB_Gateway */
 } /* namespace icke2063 */

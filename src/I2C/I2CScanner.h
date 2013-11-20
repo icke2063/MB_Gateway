@@ -12,11 +12,11 @@
 
 #define MAX_SCAN_FAIL 5
 
-#include <auto_ptr.h>
+#include <memory>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 using namespace std;
-
-//ext lib
-#include <boost/thread.hpp>
 
 //own lib
 #include <Logger.h>
@@ -37,13 +37,13 @@ public:
 
 private:
 
-	auto_ptr<boost::thread> m_scanner_thread;
+	unique_ptr<std::thread> m_scanner_thread;
 	bool m_running;
 
 	virtual void thread_function (void);
 
-    boost::condition_variable m_Condition;  // Condition variable for timed_wait
-    boost::mutex m_Mutex;                   // Mutex
+    std::condition_variable m_Condition;  // Condition variable for timed_wait
+    std::mutex m_Mutex;                   // Mutex
     unsigned int m_timeout;
 
     I2C_Slave *findSlaveType (uint8_t slaveaddress);

@@ -27,10 +27,9 @@
 //std libs
 #include <stdint.h>
 #include <list>
-#include <auto_ptr.h>
+#include <memory>
+#include <thread>
 using namespace std;
-
-#include <boost/thread.hpp>
 
 //MB_Framework
 #include <MBServer.h>
@@ -63,13 +62,13 @@ private:
 	 */
 	void connection_handler(void);
 
-	auto_ptr<boost::thread> m_server_thread;
-	auto_ptr<boost::thread> m_conn_handler_thread;
+	unique_ptr<std::thread> m_server_thread;
+	unique_ptr<std::thread> m_conn_handler_thread;
 
 	bool m_server_running;
 	int m_server_socket;
 
-	auto_ptr<ThreadPool> pool;
+	unique_ptr<ThreadPool> pool;
 
 };
 
