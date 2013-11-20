@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-project (mb_gateway)
+project (crumby)
 
 #support switches
 option(I2C_SUPPORT "compile with I2C support" ON)
