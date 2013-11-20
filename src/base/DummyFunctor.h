@@ -19,10 +19,15 @@ namespace MB_Gateway {
 
 class Dummy_Functor: public FunctorInt {
 public:
-	Dummy_Functor();
-	virtual ~Dummy_Functor();
+	Dummy_Functor(){
+	  printf("Dummy_Functor\n");
+	};
+	virtual ~Dummy_Functor(){
+	  printf("~Dummy_Functor\n");
+	};
 	virtual void functor_function(void);
 };
+
 
 } /* namespace MB_Gateway */
 } /* namespace icke2063 */

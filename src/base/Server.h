@@ -68,7 +68,7 @@ private:
 	bool m_server_running;
 	int m_server_socket;
 
-	unique_ptr<ThreadPool> pool;
+	unique_ptr<DelayedThreadPool> pool;
 
 };
 

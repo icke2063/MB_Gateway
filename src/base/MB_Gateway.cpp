@@ -17,7 +17,6 @@ using namespace std;
 
 #include <build_options.h>
 
-//#include <ThreadPool.h>
 #include <Server.h>
 #include <SlaveList.h>
 #include <SummerySlave.h>

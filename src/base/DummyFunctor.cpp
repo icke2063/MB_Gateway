@@ -13,17 +13,11 @@
 namespace icke2063 {
 namespace MB_Gateway {
 
-Dummy_Functor::Dummy_Functor() {
-	// TODO Auto-generated constructor stub
-
-}
-
-Dummy_Functor::~Dummy_Functor() {
-	// TODO Auto-generated destructor stub
-}
 
 void Dummy_Functor::functor_function(void){
+	printf("Dummy_Functor\n");
 	usleep(10000);
+	printf("finished\n");
 }
 
 } /* namespace MB_Gateway */
