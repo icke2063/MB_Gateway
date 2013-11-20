@@ -315,7 +315,7 @@ void printIOBoardSlave(uint8_t address) {
 						printf("toggle \n");
 						break;
 					case PIN_PULSE:
-						printf("pule \n");
+						printf("pulse \n");
 						break;
 					case PIN_S0:
 						printf("S0 bus \n");
