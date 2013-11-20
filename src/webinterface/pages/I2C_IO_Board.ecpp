@@ -1,0 +1,573 @@
+<& common_functions.authentification qparam >
+<& common_functions.doctype qparam >
+<& common_functions.html_head qparam >
+<& common_functions.header qparam >
+<& form_i2c_io_board qparam>
+<& I2C.form_i2c qparam>
+<& common_functions.footer qparam >
+
+<%pre>
+//standard library
+#include <vector>
+using namespace std;
+
+//boost library
+#include "boost/serialization/singleton.hpp"
+
+//project specific
+#include <SlaveList.h>
+#include <SummerySlave.h>
+
+#include <IOBoardSlave.h>
+using namespace icke2063::MB_Gateway;
+#include <I2CComm.h>
+using namespace icke2063::MB_Gateway::I2C;
+
+//IO_Board
+#include "I2C_IO_BOARD.git/base/inc/slave_eeprom_mapping.h"
+#include "I2C_IO_BOARD.git/common_AVR/include/IO_handling.h"
+</%pre>
+
+<####################################################################################>
+<# These variables are visible all over this file (in all functions 				#>
+<# but only for one request. After request these variables are removed from memory 	#>
+<####################################################################################>
+<%request scope="page">
+uint8_t vio_count = 0;
+uint8_t vio_port_count = 0;
+map<uint8_t,uint8_t> pin_function;
+string messages("");
+</%request>
+
+<############################################>
+<# print i2c io board formular  			#>
+<# - main function to create io-board form	#>
+<# - parameter:	see args					#>
+<############################################>
+<%def form_i2c_io_board>
+<%args>
+int SlaveNr = 0;	// slave number: slot on which virtual RTU slave can be addressed
+string request_table_io_board_viopin;	// marker for post data
+int debug = 0;	// debug flag
+string button = "";	// button value to 
+</%args>
+<div id="ioboard_form">
+	<h1>I2C IO Board</h1>
+<%cpp>
+MBVirtualRTUSlave *p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+if( p_slave != NULL ){
+
+	IOBoard_Slave *p_io_board = dynamic_cast<IOBoard_Slave *>(p_slave);
+	
+	if(p_io_board == NULL)return 0;		//no IO_Board object -> exit function
+
+	int pin;
+	bool i2copen = false;
+	uint8_t recvbuffer[100];
+	uint16_t i2c_address = 0;
+	
+
+	if(	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1") ) i2copen = true;
+
+	//get vio_count
+	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[VIRTUAL_IO_COUNT/2], 2);	//get count from modbus database
+	vio_count = recvbuffer[0];	//get count value		
+	vio_port_count = ((vio_count / 8) + ((vio_count % 8) > 0 ? 1 : 0));	//calc virtual port count
+
+	//port value
+	uint16_t vio_port[vio_port_count];
+	for(int port=0;port<vio_port_count;port++){
+		i2c_address = (VIRTUAL_IO_START + (2*port));
+		recvbuffer[0] = (i2c_address >> 8); //first high
+		recvbuffer[1] = (i2c_address & 0xff); //second low	
+		if (i2copen && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, 2, vio_port_count*2)) {
+			vio_port[port] = recvbuffer[0] << 8;
+			vio_port[port] |= recvbuffer[1];
+			if(debug > 2)messages += "[I2C]get port value: success\n";			
+		}else {
+			if(debug > 0)messages += "[I2C]get port value: failure\n";
+		}
+	}
+	
+	//pin function codes
+	for(pin=0;pin<vio_count;pin++){
+		//get pin function code
+		i2c_address = (I2C_BUFFER_SIZE + EEPROM_FUNC_START + (pin * 2));
+		pin_function[pin] = p_io_board->getMappingDB()->tab_registers[i2c_address/2] >> 8 ;
+	}
+	
+</%cpp>
+
+%if(debug > 1){
+DEBUG OUTPUT<br>
+	vio_count: <$ (int)vio_count $><br>
+	vio_port_count: <$ (int)vio_port_count $><br>
+%	for(int port=0;port<vio_port_count;port++){
+		vio_port[<$ (int)port $>]:<$ (int)vio_port[port] $><br>
+%	}
+%}
+%if(button == "Absenden"){
+	<& handle_request_write_enable handle_form=true qparam>
+	<& handle_request_pin_action qparam >
+	<& handle_func_select qparam >
+%}
+<$ messages $>
+<table id="table_io_board_info">
+	<tr>
+		<# Name #>
+		<th>Name</th>
+		<# Wert #>
+		<th>Wert</th>
+		<# Bemerkung #>
+		<th>Bemerkung</th>
+		<# Aktion #>
+		<th>Aktion</th>
+	</tr>
+	<tr>
+		<form action="<$ request.getUrl() $>" method="post" accept-charset="ISO-8859-1">
+			<input type='hidden' name='request_i2c_io_board' value='chgaddr' />
+			<td>I2C Add:</td>
+			<td><input name="SlaveNr" value="<$ SlaveNr $>"></td>
+			<td></td>
+			<td><input type="submit" value="Ändern"></td>
+		</form>
+	</tr>
+	<tr>
+		<td>Type:</td>
+		<td><$$ (int)p_slave->getType() $></td>
+		<td></td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>Soft.Ver.:</td>
+		<td>
+<%cpp>
+	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[VERSION_START/2], VERSION_LENGTH);
+	recvbuffer[VERSION_LENGTH] = '\0'; //
+</%cpp>
+		<$ recvbuffer $>
+		</td>
+		<td></td>
+		<td></td>
+	</tr>
+</table>
+
+<form action="<$ request.getUrl() $>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">
+	<input type='hidden' name='request_table_io_board_viopin' value='data' />
+%if(debug > 0){
+	<input type='hidden' name='debug' value='<$ (int)debug $>' />
+%}
+	<table id="table_io_board_viopin" border = "1">
+<######### pin number/name/status ##########>
+	<tr>
+<%cpp>
+//read all data from DB
+for(pin=0;pin<12;pin=pin+2){
+uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
+				+ (pin * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
+</%cpp>
+		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
+%}
+	</tr>
+<########## ~pin number/name/status ##########>
+	
+<####### pin function code #######>
+	<tr>
+%for(pin=0;pin<12;pin=pin+2){
+		<td>
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) >
+			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
+		</td>
+%}
+	</tr>
+<####### ~pin function code #######>
+	
+%if(vio_count > 12){
+<tr>
+<td colspan="2"/>
+<td colspan="4">
+	<table border = "1">
+<######### pin number/name/status ##########>
+	<tr>
+<%cpp>
+//read all data from DB
+for(pin=12;pin<16;pin++){
+uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
+				+ (pin * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
+</%cpp>
+		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
+%}
+	</tr>
+<########## ~pin number/name/status ##########>
+	
+<####### pin function code #######>
+	<tr>
+%for(pin=12;pin<16;pin++){
+		<td>
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) >
+			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
+		</td>
+%}
+	</tr>
+<####### ~pin function code #######>
+
+</table>
+</td>
+</tr>
+
+%}else{	
+	<tr style="height:30px"></tr>
+%}
+	<tr><td><& elem_write_enable handle_form=((request_table_io_board_viopin == "data")?true:false) qparam></tr></td>
+	
+	<tr style="height:30px"></tr>
+<####### pin function code #######>
+	<tr>
+%for(pin=1;pin<12;pin=pin+2){
+		<td>
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) >
+			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
+
+		</td>
+%}
+	</tr>
+<####### ~pin function code #######>
+<######### pin name ##########>
+	<tr>
+<%cpp>
+//read all names from DB
+for(pin=1;pin<12;pin=pin+2){
+uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
+				+ (pin * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
+</%cpp>
+	<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
+%}
+	</tr>
+<########## ~pin name ##########>
+	</table>
+<input type="submit" name="button" value="Absenden">
+<input type="submit" name="button" value="Aktualisieren">
+</form>
+%} else {
+Slave not found
+%}
+</div>
+
+</%def>
+
+
+<################################>
+<# handle function select		#>
+<################################>
+<%def handle_func_select>
+<%args>
+std::string request_table_io_board_viopin = "";
+int SlaveNr = 0;
+uint16_t vio_func[];
+</%args>
+<%cpp>
+if(request_table_io_board_viopin != ""){	
+		
+	uint8_t cur_pin;
+	uint8_t cur_func;
+	bool i2c_open = false;
+	
+	unsigned char recvbuffer[5];
+	
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+	
+	</%cpp>
+	i2c_open:<$ (int)i2c_open $>
+	<%cpp>
+	
+	for(vio_func_type::const_iterator func_it = vio_func.begin();func_it != vio_func.end();++func_it){
+	
+		cur_pin = ((uint16_t)*func_it)>>8;
+		cur_func = (((uint16_t)*func_it) & 0xff);
+
+		if(cur_pin != 255){
+			
+			uint16_t i2c_address = (I2C_BUFFER_SIZE + EEPROM_FUNC_START + (cur_pin * 2));
+			
+			
+			recvbuffer[0] = (i2c_address >> 8); //first high
+			recvbuffer[1] = (i2c_address & 0xff); //second low
+			
+			recvbuffer[2] = 0;
+			recvbuffer[3] = cur_func;
+						
+			if (i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)) {
+		
+		
+				MBVirtualRTUSlave *p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+				if( p_slave != NULL ){
+					IOBoard_Slave *p_io_board = dynamic_cast<IOBoard_Slave *>(p_slave);
+					if(p_io_board != NULL){
+						p_io_board->getMappingDB()->tab_registers[i2c_address/2] = cur_func << 8 ;
+					}
+				}
+		</%cpp>
+			handle func pin success
+		<%cpp>			
+			}else{
+		</%cpp>
+			handle func pin failure
+		<%cpp>			
+			
+			}
+		}//if
+	}//for
+			
+}//if	
+</%cpp>
+</%def>
+
+
+
+<####################################################>
+<# print vio pin specific select					#>
+<# param pinNr:		number of pin					#>
+<#       func_code:	function code to preselect		#>
+<####################################################>
+<%def print_func_select>
+<%args>
+int pinNr = 0;
+int func_code = 0;
+</%args>
+<select name="vio_func" size="1">
+	<option value="<$ func_code == PIN_DISABLED?(255<<8):(uint16_t)((pinNr<<8) | PIN_DISABLED) $>" <$ func_code == PIN_DISABLED?"selected":"" $>>disabled</option>
+	<option value="<$ func_code == PIN_INPUT?(255<<8):(uint16_t)((pinNr<<8) | PIN_INPUT) $>" <$ func_code == PIN_INPUT?"selected":"" $>>input</option>
+	<option value="<$ func_code == PIN_SWITCH?(255<<8):(uint16_t)((pinNr<<8) | PIN_SWITCH) $>" <$ func_code == PIN_SWITCH?"selected":"" $>>switch</option>
+	<option value="<$ func_code == PIN_TOGGLE?(255<<8):(uint16_t)((pinNr<<8) | PIN_TOGGLE) $>" <$ func_code == PIN_TOGGLE?"selected":"" $>>toggle</option>
+	<option value="<$ func_code == PIN_PULSE?(255<<8):(uint16_t)((pinNr<<8) | PIN_PULSE) $>" <$ func_code == PIN_PULSE?"selected":"" $>>pulse</option>
+</select>
+</%def>
+
+<################################>
+<# handle eeprom pin action		#>
+<################################>
+<%def handle_request_pin_action>
+<%args>
+std::string request_table_io_board_viopin = "";
+int SlaveNr = 0;
+uint16_t viopin[];
+</%args>
+<%cpp>
+if(request_table_io_board_viopin != ""){
+	uint8_t recvbuffer[2 + (2 * vio_port_count)];	//address + 2x port count (mask + value)
+	uint16_t cur_port[vio_port_count];				//temporary port values
+	uint8_t cur_port_num;
+	uint8_t cur_pin;
+	uint8_t cur_func;
+	
+	/* reset temporary port values */
+	for(int i=0;i<vio_port_count;i++){
+		cur_port[i] = 0;
+	}
+	
+	/* 
+	* init temporary port values
+	* - switch -> set switch off -> if checkbox marked switch on again
+	*/
+	for(map<uint8_t,uint8_t>::iterator func_it = pin_function.begin();func_it != pin_function.end();++func_it){
+	
+		if((func_it->first/8) < vio_port_count){
+			switch(func_it->second){
+				case PIN_SWITCH:
+					cur_port[func_it->first/8] |= (1 << func_it->first)<<8;	//enable port pin mask but set pin value -> off
+					break;
+				case PIN_TOGGLE:
+				case PIN_PULSE:	
+				case PIN_DISABLED:
+				case PIN_INPUT:
+				default:
+					break;
+			}
+		} else {
+		
+		}
+	}
+			
+	for(viopin_type::const_iterator it = viopin.begin();it != viopin.end();++it){
+		cur_port_num = (((uint16_t)*it) & 0xff)/8;
+		cur_pin = (((uint16_t)*it) & 0xff)%8;
+		cur_func = ((uint16_t)*it)>>8;
+	
+	
+		switch(cur_func){
+			case PIN_PULSE:
+				if( cur_port_num < vio_port_count){
+					cur_port[cur_port_num] |= (1<< cur_pin)<<8 | (1<< cur_pin);
+				}
+				break;
+			case PIN_INPUT:
+			case PIN_SWITCH:
+			case PIN_TOGGLE:
+			case PIN_DISABLED:
+			default:
+				break;
+		}
+	}//for
+
+
+	recvbuffer[0] = (VIRTUAL_IO_START >> 8); //first high
+	recvbuffer[1] = (VIRTUAL_IO_START & 0xff); //second low
+	
+	for(int port_pos=0;port_pos< vio_port_count;port_pos++)
+	{
+		recvbuffer[2+(port_pos*2)] = cur_port[port_pos] >> 8;
+		recvbuffer[2+(port_pos*2)+1] = cur_port[port_pos] & 0xFF;
+	}
+	
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen() 
+			&& boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, 2, 2+(vio_port_count*2))) {
+		messages += "handle vio pin success<br>";
+	}
+
+}//if	
+</%cpp>
+</%def>
+
+
+<########################>
+<# elem: pin_action		#>
+<########################>
+<%def elem_pin_action>
+<%args>
+int pin = 0;
+int pin_func = 0;
+int vio_port = 0;
+</%args>
+<%cpp>
+		switch(pin_func){
+		case PIN_SWITCH:
+		case PIN_TOGGLE:
+		case PIN_PULSE:
+</%cpp>
+	<input type="checkbox" name="viopin" value="<$ (uint16_t)((pin_func << 8) | pin) $>">
+<%cpp>		
+			break;		
+		case PIN_DISABLED:
+		case PIN_INPUT:
+		default:
+			break;
+	}
+</%cpp>
+</%def>
+
+<########################>
+<# elem: style_by_pin_status		#>
+<########################>
+<%def style_by_pin_status>
+<%args>
+int pin = 0;
+int pin_func = 0;
+int vio_port = 0;
+string name = "";
+</%args>
+pin:	<$ pin $>
+pin_func: <$ pin_func $>
+vio_port: <$ vio_port $>
+<%cpp>
+	string back_color="rgb(255,255,255)";
+	string text_color="rgb(255,255,255)";
+		switch(pin_func){
+		case PIN_DISABLED:
+			back_color = "rgb(0,0,0)";
+			break;
+		case PIN_INPUT:
+			if((vio_port >> 8) & (1<<(pin%8))){
+				back_color = "rgb(0,153,0)";
+			}else{
+				back_color = "rgb(153,0,0)";
+			}
+			break;
+		case PIN_SWITCH:
+			break;
+		case PIN_TOGGLE:
+			break;
+		case PIN_PULSE:
+			back_color = "rgb(0,153,153)";
+			break;		
+		default:
+		break;
+	}
+</%cpp>
+style="color: <$ text_color $>; background-color: <$ back_color $>; height: 10px;"
+</%def>
+
+
+<####################################>
+<# elem: eeprom write enable		#>
+<####################################>
+<%def elem_write_enable>
+<%args>
+int SlaveNr = 0;
+</%args>
+<%cpp>
+	uint8_t recvbuffer[4];
+	bool i2c_open = false;
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+
+	
+	string checked = "";
+	
+	memset(recvbuffer, 0, 2);
+	recvbuffer[0] = (EEPROM_WRITE_ENABLE >> 8); //first high
+	recvbuffer[1] = (EEPROM_WRITE_ENABLE & 0xff); //second low
+	 
+	if(i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)){
+		if((recvbuffer[0] == EEPROM_WRITE_CODE) && (recvbuffer[1] == EEPROM_WRITE_CODE)) checked = "checked";
+	}else{
+</%cpp>
+		eeprom write error
+<%cpp>
+	}
+</%cpp>
+	<input type="checkbox" name="eeprom_write_enable" value="1" <$ checked $>>EEPROM write enable[<$ (int)recvbuffer[0] $>;<$ (int)recvbuffer[1] $>]
+</%def>
+
+
+<###############################>
+<# handle eeprom write enable  #>
+<###############################>
+<%def handle_request_write_enable>
+<%args>
+std::string eeprom_write_enable = "";
+int SlaveNr = 0;
+bool handle_form = false;
+int debug = 0;
+</%args>
+<%cpp>
+	uint8_t recvbuffer[4];
+	bool i2c_open = false;
+	if(handle_form){
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+		
+		recvbuffer[0] = (EEPROM_WRITE_ENABLE >> 8); //first high
+		recvbuffer[1] = (EEPROM_WRITE_ENABLE & 0xff); //second low
+	
+		if(eeprom_write_enable == "1"){
+			recvbuffer[2] = EEPROM_WRITE_CODE;
+			recvbuffer[3] = EEPROM_WRITE_CODE;
+		}else{
+			recvbuffer[2] = 0; 
+			recvbuffer[3] = 0;
+		}
+		
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen() 
+				&& boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)) {
+			if(debug>0)messages += "epprom write enable success<br>";
+		} else {
+			if(debug>0)messages += "epprom write enable failure<br>";
+		}	
+	
+	}
+</%cpp>
+</%def>

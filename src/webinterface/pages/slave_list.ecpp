@@ -1,0 +1,59 @@
+<%def slave_table>
+<%pre>
+#include "boost/serialization/singleton.hpp"
+#include <SlaveList.h>
+#include <SummerySlave.h>
+#include <IOBoardSlave.h>
+using namespace icke2063::MB_Gateway;
+
+#include <build_options.h>
+
+</%pre>
+<table id="table_slave_list">
+	<tr>
+		<# SlaveID #>
+		<th>SlaveID</th>
+		<# SlaveAddress #>
+		<th>Slave Address</th>
+		<# Type #>
+		<th>Type</th>
+	</tr>
+<%cpp>
+for(int slave=0;slave<=255;slave++){
+if(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)){
+</%cpp>
+<tr>
+	<# SlaveID #>
+	<td><$ (int)boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)->getType() $></td>
+	<# SlaveAddress #>	
+%switch(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)->getType()){
+%case SLAVE_TYPE_SUMMERY:
+	<td><a href=index.html'><$ slave $></a></td>
+	<td>Summery Slave</td>
+%	break;
+%#ifdef I2C_SUPPORT
+%case SLAVE_TYPE_IOBOARD:
+	<td><a href='I2C_IO_Board.html?SlaveNr=<$ slave $>'><$ slave $></a></td>
+	<td>I2C IO Board</td>
+%	break;
+%#endif
+%default:
+	<td><a href='DSlave.html?SlaveNr=<$ slave $>'><$ slave $></a></td>
+	<td>Default Slave</td>
+%	break;
+%}
+</tr>
+
+%}}
+
+</table>
+</%def>
+<& common_functions.authentification qparam >
+<& common_functions.doctype qparam >
+<& common_functions.html_head qparam >
+<& common_functions.header qparam >
+<& slave_table >
+<& common_functions.footer qparam >
+
+
+

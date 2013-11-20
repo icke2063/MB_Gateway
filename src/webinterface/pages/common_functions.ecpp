@@ -1,0 +1,66 @@
+<%def doctype>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">	
+<html xmlns="http://www.w3.org/1999/xhtml">						
+<# <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"> #>
+</%def>
+
+<%def html_head>
+<%args>
+project = "crumby";
+</%args>
+<head><title><$ project $> &ndash; by icke2063</title>
+<meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-15' />
+<meta name='author' content='icke2063, icke2063@gmail.com' />
+<link rel='shortcut icon' href='./favicon.ico' type='image/ico'/>
+
+<link rel='stylesheet' type='text/css' href='./css/formats.css' />
+</head>
+</%def>
+
+<%def header>
+<div id='header'>
+	<h1>MB_Gateway</h1>
+</div> <!-- header -->
+</%def>
+
+<%def footer>
+<div id='footer'>
+	<p> &copy; 2013&nbsp;icke2063</p>
+</div> <!-- id footer -->
+</%def>
+
+<%def authentification>
+<%session scope="global">
+	bool logged_in(false);	//current useless :-)
+</%session>
+<%cpp>
+	//if(logged_in)return;
+	
+	if (request.getUsername() != "icke2063"
+	|| !request.verifyPassword("icke2063"))
+	{
+	    reply.notAuthorized("passt nich");
+	}
+	else
+	{
+	    logged_in = true;
+	}
+</%cpp>
+</%def>
+
+<%def mainmenu >
+<%args>
+menuextra;
+</%args>
+<div id='navigation'>
+	<ul>
+		<li class='selected'>
+			<a href='index.html'>overview</a>
+			<a href='server_overview.html'>server</a>
+			<a href='device_overview.html'>device</a>
+			
+			<$ menuextra $>
+		</li>
+	</ul>
+</div> <!-- id navigation -->
+</%def>

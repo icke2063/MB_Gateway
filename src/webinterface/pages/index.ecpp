@@ -1,0 +1,21 @@
+<%pre>
+#include "boost/serialization/singleton.hpp"
+
+
+#include <SlaveList.h>
+
+using namespace icke2063::MB_Gateway;
+</%pre>
+
+<%cpp>
+int gnaa=boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size();
+//int gnaa = 6;
+
+//boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(new SummerySlave(255));
+</%cpp>
+
+<$$  gnaa $>
+
+<& common_functions.authentification qparam >
+<& common_functions.doctype qparam >
+<& common_functions.html_head qparam >

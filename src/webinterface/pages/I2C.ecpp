@@ -1,0 +1,107 @@
+<& common_functions.authentification qparam >
+<& common_functions.doctype qparam >
+<& common_functions.html_head qparam >
+<& common_functions.header qparam >
+<& handle_form_i2c qparam >
+<& form_i2c qparam>
+<& common_functions.footer qparam >
+
+<%pre>
+#include <vector>
+using namespace std;
+
+#include "boost/serialization/singleton.hpp"
+
+#include <SlaveList.h>
+#include <SummerySlave.h>
+using namespace icke2063::MB_Gateway;
+
+#include <I2CComm.h>
+using namespace icke2063::MB_Gateway::I2C;
+</%pre>
+
+<%request scope="page">
+uint8_t test = 0;
+</%request>
+
+<####################################>
+<# i2c formular for read/write		#>
+<####################################>
+<%def form_i2c>
+
+<%args>
+int SlaveNr = 0;
+int i2c_address_mode = 1;
+int i2c_address = -1;
+
+string btn_i2c_form = "";
+</%args>
+<& handle_form_i2c qparam >
+<div id="i2c_form">
+test: <$ (int)test $>
+<%cpp>
+MBVirtualRTUSlave *p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+if( p_slave != NULL ){	
+	uint8_t recvbuffer[100];
+	int i2c_value = -1;
+	
+	if(btn_i2c_form == "Read"){
+	if(	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1") ){
+
+		switch(i2c_address_mode){
+			case 1:
+				recvbuffer[0] = (i2c_address & 0xff); //first only	
+				break;
+			case 2:
+				recvbuffer[0] = (i2c_address >> 8); //first high
+				recvbuffer[1] = (i2c_address & 0xff); //second low	
+				break;
+			default:
+				recvbuffer[0] = 0;	
+				break;
+		}
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, 1)) {
+			i2c_value = recvbuffer[0];			
+		}
+	}
+}
+
+</%cpp>
+btn_i2c_form = <$ btn_i2c_form $>
+<form action="<$ request.getUrl() $>" method="post" accept-charset="ISO-8859-1">
+	<input type='hidden' name='SlaveNr' value='<$ SlaveNr $>' />
+	I2C address mode:
+		<input type="radio" name="i2c_address_mode" value="1" <$ i2c_address_mode==1?"checked":"" $> > 8 Bit
+		<input type="radio" name="i2c_address_mode" value="2" <$ i2c_address_mode==2?"checked":"" $> > 16 Bit<br>
+	I2C address:
+		<input name="i2c_address" value="<$ i2c_address $>"><br>	
+	I2C value:
+		<input name="i2c_value" value="<$ i2c_value $>"><br>	
+		
+        <input type="submit" name="btn_i2c_form" value="Read">
+        <input type="submit" name="btn_i2c_form" value="Write">
+</form>
+%} else {
+I2C slave[<$ SlaveNr $>] not found
+%}
+</div>
+</%def>
+
+
+<########################################>
+<# handle i2c formular for read/write	#>
+<########################################>
+<%def handle_form_i2c>
+<%args>
+int SlaveNr = 0;
+int i2c_address = -1;
+i2c_address_mode = 1;
+string btn_i2c_form = "";
+</%args>
+<%cpp>
+test = 6;
+</%cpp>
+</%def>
+
+
+
