@@ -1,25 +1,25 @@
 #! /bin/sh
 #
 ### BEGIN INIT INFO
-# Provides:          mb_gateway
+# Provides:          @PROJECT_NAME@
 # Required-Start:    $network
 # Required-Stop:     $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # X-Interactive:     true
-# Short-Description: Start/stop the [mb_gateway program]
+# Short-Description: Start/stop the [@PROJECT_NAME@ program]
 ### END INIT INFO
 #
-# Startup script for MB_Gateway
+# Startup script for @PROJECT_NAME@
 #
-NAME=mb_gateway
+NAME=@PROJECT_NAME@
 PATH=/usr/bin
 DAEMON=$PATH/$NAME
 OPTIONS=
-LOCK=/var/lock/${Name}
+LOCK=/var/lock/${NAME}
 PIDSPATH=/var/run/
 
-touch ${LOCK}*
+touch $LOCK*
 start)
 echo "Starting " $0
 start-stop-daemon --start --quiet --background --pidfile $PIDSPATH/$NAME.pid --exec $DAEMON

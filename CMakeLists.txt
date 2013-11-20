@@ -29,5 +29,10 @@ add_subdirectory (MB_Framework)
 #add sources(own CMakeList.txt)
 add_subdirectory (src)
 
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/scripts/startup/mb_gateway
+configure_file(
+	"${CMAKE_CURRENT_SOURCE_DIR}/scripts/startup/startup_script.sh.in"
+	${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.sh
+)
+
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.sh
   DESTINATION /etc/init.d/)
