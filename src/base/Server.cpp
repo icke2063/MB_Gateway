@@ -63,31 +63,8 @@ Server::Server(uint16_t port):
 
 	m_conn_lock.reset(new MB_Gateway::Mutex);
 
-	pool.reset(new DelayedThreadPool());	//get new ThreadPool
+	pool.reset(new ThreadPool());	//get new ThreadPool
 	pool->setHighWatermark(5);
-
-	shared_ptr<Dummy_Functor> dummy = shared_ptr<Dummy_Functor>(new Dummy_Functor());
-	
-	
-	//Clock::time_point deadline = Clock::to_time_t(Clock::now() + std::chrono::seconds(5));
-	struct timeval now;
-	gettimeofday(&now,0);
-	now.tv_sec += 5;
-	
-	
-	pool->addDelayedFunctor(dummy,now);
-	pool->addDelayedFunctor(dummy,now);
-	now.tv_sec += 5;
-	
-	pool->addDelayedFunctor(dummy,now);
-	pool->addDelayedFunctor(dummy,now);
-	now.tv_sec += 5;
-	
-	pool->addDelayedFunctor(dummy,now);
-	now.tv_sec += 5;
-	
-	pool->addDelayedFunctor(dummy,now);
-	
 	
 	m_server_thread.reset(new std::thread(&Server::waitForConnection, this));	// create new scheduler thread
 	m_conn_handler_thread.reset(new std::thread(&Server::connection_handler, this));
@@ -215,7 +192,7 @@ void Server::connection_handler (void){
 
 				if(curConn->getStatus() == MBConnection::closed){//remove closed connection
 					logger->debug("remove Connection\n");
-					//delete curConn;
+					//delete curConn; //done by shared_ptr
 					conn_it = openConnections.erase(conn_it);
 					continue;
 				}
