@@ -44,13 +44,13 @@ public:
 private:
 	bool init(void);
 
-	unique_ptr<std::thread> p_scanner_thread;
+	unique_ptr<thread> p_scanner_thread;
 	bool m_running;
 
 	virtual void thread_function (void);
 	
-	std::condition_variable m_Condition;  // Condition variable for timed_wait
-	std::mutex m_Mutex;                   // Mutex
+	condition_variable m_Condition;  // Condition variable for timed_wait
+	mutex m_Mutex;                   // Mutex
 	unsigned int m_timeout;
 };
 
