@@ -30,6 +30,7 @@ po::variables_map vm;
 
 void printSummeryList(void);
 void printSlaveInfo(uint8_t address, uint8_t id);
+void printLoadInfo(void);
 void printI2CSlave(uint8_t address);
 void printIOBoardSlave(uint8_t address);
 
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
 			("slave",po::value<uint16_t>(), "virtual slave")
 			("hostname",po::value<string>(), "MB_Gateway: IP <string>")
 			("hostport",po::value<int>(), "MB_Gateway: Port <int>")
+			("load", "Get Load Info")
 			("summery",	po::value<int>(), "Summery Slave <int>");
 
 
@@ -107,6 +109,11 @@ int main(int argc, char *argv[]) {
 		if (vm.count("scan"))
 			printSummeryList();
 
+		if (vm.count("load")) {
+			printLoadInfo();
+		}
+		
+		
 		//read/write modbus register
 		if (vm.count("slave") && vm.count("address")) {
 
@@ -135,6 +142,24 @@ int main(int argc, char *argv[]) {
 		cout << "got no Connection " << "\n";
 	}
 
+}
+
+void printLoadInfo(void){
+  uint16_t value[10];
+  int ret;
+  
+  printf("printLoadInfo[%d]\n",summery);
+  
+  modbus_set_slave(mb, summery);
+  ret = modbus_read_input_registers(mb, DEFAULT_SUMMERY_COUNT, 5, value);
+  if (ret > 0) {
+    for(int i=0;i<5;i++){
+      printf("load[%d]:%d\n", i, value[i]);
+    }
+  }else{
+  printf("error on receive\n");
+    
+  }
 }
 
 void printSummeryList(void) {
