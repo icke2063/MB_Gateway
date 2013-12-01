@@ -10,3 +10,6 @@
 [submodule "common_cpp"]
 	path = common_cpp
 	url = git@github.com:icke2063/common_cpp.git
+[submodule "CXX11-CMake-Macros"]
+	path = CXX11-CMake-Macros
+	url = git@github.com:icke2063/CXX11-CMake-Macros.git
