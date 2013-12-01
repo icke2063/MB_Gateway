@@ -57,7 +57,7 @@ void I2C_Comm::i2cClose() {
 bool I2C_Comm::i2cSetAddress(unsigned char address) {
 	unsigned char retry = MAX_I2C_RETRY;
 	if (m_i2cFD > 0) {
-		std::lock_guard<std::mutex> lock(*(i2cbus_lock.getMutex().get()));
+		lock_guard<mutex> lock(i2cbus_lock);
 		while (retry-- != 0 && ioctl(m_i2cFD, I2C_SLAVE, address) < 0) {
 		}
 		if (retry)
@@ -84,7 +84,7 @@ bool I2C_Comm::Write_I2C_Bytes(unsigned char DEVICE_ADDR, uint8_t *databuffer,
 	packets.nmsgs = 1;
 
 	{
-		std::lock_guard<std::mutex> lock(*(i2cbus_lock.getMutex().get()));
+		lock_guard<mutex> lock(i2cbus_lock);
 		if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
 			usleep(10000);
 			if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
@@ -122,7 +122,7 @@ bool I2C_Comm::Read_I2C_Bytes(unsigned char DEVICE_ADDR, uint8_t *databuffer,
 	packets.msgs = messages;
 	packets.nmsgs = 2;
 	{
-		std::lock_guard<std::mutex> lock(*(i2cbus_lock.getMutex().get()));
+		lock_guard<mutex> lock(i2cbus_lock);
 		if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {
 			usleep(10000);
 			if (ioctl(m_i2cFD, I2C_RDWR, &packets) < 0) {

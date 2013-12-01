@@ -19,7 +19,7 @@ WebInterface::WebInterface(uint16_t port):m_port(port) {
 
 	logger->info("WebInterface@%i",m_port);
 
-	p_server_thread.reset(new std::thread(&WebInterface::thread_function, this)); // create new scheduler thread
+	p_server_thread.reset(new thread(&WebInterface::thread_function, this)); // create new scheduler thread
 
 }
 

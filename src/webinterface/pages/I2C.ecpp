@@ -40,8 +40,8 @@ string btn_i2c_form = "";
 <div id="i2c_form">
 test: <$ (int)test $>
 <%cpp>
-MBVirtualRTUSlave *p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-if( p_slave != NULL ){	
+shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+if( p_slave.get() != NULL ){	
 	uint8_t recvbuffer[100];
 	int i2c_value = -1;
 	

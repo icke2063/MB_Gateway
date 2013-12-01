@@ -3,6 +3,23 @@ project (crumby)
 
 #support switches
 option(I2C_SUPPORT "compile with I2C support" ON)
+option(USE_C++11_SUPPORT "use c++11 if available" ON)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CXX11-CMake-Macros")
+
+include(CXX11)
+
+check_for_cxx11_compiler(C++11)
+
+if(C++11 AND USE_C++11_SUPPORT)
+ADD_DEFINITIONS(-std=c++0x)
+  #enable c++11
+  enable_cxx11()
+else()
+  #use boost fallback
+  FIND_PACKAGE(Boost COMPONENTS thread system serialization chrono REQUIRED)
+endif()
+
 
 include_directories(/usr/include)
 
@@ -15,16 +32,6 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/inc
 	${CMAKE_CURRENT_SOURCE_DIR}/MB_Framework/inc
 	${CMAKE_CURRENT_SOURCE_DIR}/common_cpp/include
-)
-
-if(UNIX)
- #   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
-endif()
-
-#enable c++11
-ADD_DEFINITIONS(
-    -std=c++0x # Or -std=c++11
-#    # Other flags
 )
 
 add_subdirectory (common_cpp)

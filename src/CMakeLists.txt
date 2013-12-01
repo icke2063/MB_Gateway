@@ -15,8 +15,7 @@ ${MB_Framework_SOURCE_DIR}/include
 ## find extern lib
 find_library(MODBUS_LIB modbus)
 find_library(LOG4CPP log4cpp)
-#find_library(BOOST_LIB thread)
-FIND_PACKAGE(Boost COMPONENTS thread system serialization program_options REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 
 
 ### ADD SOURCES ###
@@ -32,6 +31,7 @@ set (DEF_SOURCES
 	${common_cpp_SOURCE_DIR}/src/WorkerThread.cpp
 	base/Connection.cpp
 	base/Server.cpp
+	base/SlaveList.cpp
 	base/SummerySlave.cpp
 	base/handler/DefaultHandler.cpp
 	base/handler/MultiRegisterHandler.cpp

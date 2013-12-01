@@ -42,14 +42,21 @@ int main() {
 int8_t max_functor = 1;
 int8_t offset =1;
 
-  printf("crumby\n");
-
-	unique_ptr<Server> default_server(new Server(502));
+	shared_ptr<ThreadPool> pool(new ThreadPool());
+	pool->startPoolLoop();
+	pool->setHighWatermark(10);
+	pool->setLowWatermark(1);
+	
+	  
+	unique_ptr<Server> default_server(new Server(502,pool));
 //	auto_ptr<Server> custom_server;
 #ifdef I2C_SUPPORT
 	unique_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
 #endif
-	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(new SummerySlave(255));
+	shared_ptr<SummerySlave> sum = shared_ptr<SummerySlave>(new SummerySlave(pool,255));
+	sum->startFunctor();
+	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(sum);
+	
 	unique_ptr<WebInterface> webint(new WebInterface());
 	
 

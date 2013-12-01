@@ -33,7 +33,7 @@ I2C_Scanner::I2C_Scanner(unsigned int timeout) :
 	logger->setPriority(log4cpp::Priority::DEBUG);
 	//if (console)logger->addAppender(console);
 
-	m_scanner_thread.reset(new std::thread(&I2C_Scanner::thread_function, this)); // create new scheduler thread
+	m_scanner_thread.reset(new thread(&I2C_Scanner::thread_function, this)); // create new scheduler thread
 
 	logger->info("I2C_Scanner");
 	logger->debug("m_timeout: %d",m_timeout);
@@ -61,14 +61,14 @@ void I2C_Scanner::thread_function(void) {
 	uint8_t slave_not_found_counter[MAX_I2C_SLAVE_ADR];
 	memset(slave_not_found_counter, 0, MAX_I2C_SLAVE_ADR);	//initiate array
 
-	MBVirtualRTUSlave *curSlave;
+	shared_ptr<MBVirtualRTUSlave> curSlave;
 
 	while (m_running) {
 //		m_scanner_thread->yield();	
-		std::unique_lock<std::mutex> lock(m_Mutex);
+		unique_lock<mutex> lock(m_Mutex);
 
 		if (m_Condition.wait_for(lock,
-				std::chrono::milliseconds(m_timeout)) == std::cv_status::timeout) {	// wait a little bit
+				chrono::milliseconds(m_timeout)) == cv_status::timeout) {	// wait a little bit
 
 			I2C::I2C_Comm *i2cbus = &(boost::serialization::singleton<
 					I2C::I2C_Comm>::get_mutable_instance());
@@ -102,7 +102,7 @@ void I2C_Scanner::thread_function(void) {
 								//remove slave from list
 								logger->info("remove Slave[%d] from list\n",
 										slaveID);
-								boost::serialization::singleton<SlaveList>::get_mutable_instance().deleteSlave(
+								boost::serialization::singleton<SlaveList>::get_mutable_instance().removeSlave(
 										slaveID);
 							}
 						}
@@ -121,9 +121,9 @@ void I2C_Scanner::thread_function(void) {
 	}
 }
 
-I2C_Slave *I2C_Scanner::findSlaveType (uint8_t slaveaddress){
+shared_ptr<I2C_Slave> I2C_Scanner::findSlaveType (uint8_t slaveaddress){
 	uint8_t readbuffer[4];
-	I2C_Slave *curSlave = NULL;
+	shared_ptr<I2C_Slave> curSlave;
 
 
 	I2C::I2C_Comm *i2cbus = &(boost::serialization::singleton<
@@ -142,13 +142,13 @@ I2C_Slave *I2C_Scanner::findSlaveType (uint8_t slaveaddress){
 			i2cbus->Read_I2C_Bytes(slaveaddress,readbuffer,2,1);	//16Bit
 			if(readbuffer[0] == SLAVE_ID){
 				logger->info("found IOBoard@%i",slaveaddress);
-				curSlave = new IOBoard_Slave(slaveaddress);
+				curSlave = shared_ptr<IOBoard_Slave>(new IOBoard_Slave(slaveaddress));
 			}
 		}
 	}
 
 	logger->info("use default I2C Slave@%i",slaveaddress);
-	if(curSlave == NULL)curSlave = new I2C_Slave(slaveaddress);	//default handling
+	if(curSlave.get() == NULL)curSlave = shared_ptr<I2C_Slave>(new I2C_Slave(slaveaddress));	//default handling
 	curSlave-> init();
 	return curSlave;
 }

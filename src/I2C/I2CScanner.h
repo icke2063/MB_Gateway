@@ -12,11 +12,18 @@
 
 #define MAX_SCAN_FAIL 5
 
-#include <memory>
-#include <condition_variable>
-#include <mutex>
-#include <thread>
-using namespace std;
+//std lib
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+  #include <memory>
+  #include <thread>
+  #include <condition_variable>
+  #include <mutex>
+  using namespace std;
+#else
+  #include <boost/thread.hpp>
+
+  using namespace boost;
+#endif
 
 //own lib
 #include <Logger.h>
@@ -46,7 +53,7 @@ private:
     mutex m_Mutex;                   // Mutex
     unsigned int m_timeout;
 
-    I2C_Slave *findSlaveType (uint8_t slaveaddress);
+    shared_ptr<I2C_Slave> findSlaveType (uint8_t slaveaddress);
 };
 
 }}} /* namespace icke2063::MB_Gateway::I2C */

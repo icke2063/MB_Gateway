@@ -54,12 +54,12 @@ string button = "";	// button value to
 <div id="ioboard_form">
 	<h1>I2C IO Board</h1>
 <%cpp>
-MBVirtualRTUSlave *p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 if( p_slave != NULL ){
 
-	IOBoard_Slave *p_io_board = dynamic_cast<IOBoard_Slave *>(p_slave);
+	shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 	
-	if(p_io_board == NULL)return 0;		//no IO_Board object -> exit function
+	if(p_io_board.get() == NULL)return 0;		//no IO_Board object -> exit function
 
 	int pin;
 	bool i2copen = false;
@@ -305,9 +305,9 @@ if(request_table_io_board_viopin != ""){
 			if (i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)) {
 		
 		
-				MBVirtualRTUSlave *p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-				if( p_slave != NULL ){
-					IOBoard_Slave *p_io_board = dynamic_cast<IOBoard_Slave *>(p_slave);
+				shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+				if( p_slave.get() != NULL ){
+					shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 					if(p_io_board != NULL){
 						p_io_board->getMappingDB()->tab_registers[i2c_address/2] = cur_func << 8 ;
 					}

@@ -59,21 +59,19 @@ Connection::Connection(modbus_t *ctx) :
 	if (ctx != NULL) {
 		m_ctx = *ctx;
 		m_connection_running = true;
-		m_conn_lock = shared_ptr<std::mutex>(new std::mutex());
 	}
 }
 
 Connection::~Connection() {
 	logger->info("~Connection\n");
-	std::lock_guard<std::mutex> lock(*m_conn_lock.get());
-
 	/* Connection closed by the client or error */
+	m_connection_running = false;
 	if(m_connection_running){
 		modbus_close(&m_ctx);
 	}
 }
 
-bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
+bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_slave,
 		enum handleQuery_mode mode) {
 
 	/* var for query informations */
@@ -93,12 +91,14 @@ bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
 	function = query[offset];
 	address = (query[offset + 1] << 8) + query[offset + 2];
 	cur_address = address;
-	map<uint16_t,shared_ptr<MBHandlerInt>> *cur_handlerlist = nullptr;
+	map<uint16_t,shared_ptr<MBHandlerInt> > *cur_handlerlist = NULL;
 
+	logger->debug("function[0x%x]", function);
 	/* get data count */
 	switch (function) {
 	case _FC_READ_INPUT_REGISTERS:
 		cur_handlerlist = &tmp_slave->m_input_handlerlist;
+		count = (query[offset + 3] << 8) + query[offset + 4];
 		break;
 	case _FC_READ_HOLDING_REGISTERS:
 	case _FC_WRITE_MULTIPLE_REGISTERS:
@@ -131,7 +131,7 @@ bool Connection::handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave,
 
 		if (cur_handlerlist->size() > 0) {
 			/* get handlerfunction of current address */
-			map<uint16_t, shared_ptr<MBHandlerInt>>::iterator handler_it =
+			map<uint16_t, shared_ptr<MBHandlerInt> >::iterator handler_it =
 					cur_handlerlist->find(cur_address); //try to find slavehandlers
 			if (handler_it != cur_handlerlist->end()) {
 			  shared_ptr<MBHandlerInt> tmpHandler = handler_it->second;
@@ -221,21 +221,19 @@ void Connection::ConnFunctor::functor_function(void) {
 	uint8_t slave;
 	uint8_t function;
 
-
 	
-	Connection *p_curConn = dynamic_cast<Connection*>(p_conn);	//cast given pointer
-	if(p_curConn == NULL)return;								//check existence of parent class
-	std::lock_guard<std::mutex> lock(*(p_curConn->getLock().get()));	//lock parent class
-
-
-	p_ctx = p_curConn->getConnInfo();
+	if(!p_conn.get()){
+	 p_conn->logger->error("functor_function: p_conn failure\n");
+	  return;								//check existence of parent class
+	}
+	p_ctx = p_conn->getConnInfo();
 
 	/* Watch stdin (fd 0) to see when it has input. */
 
-	p_curConn->logger->debug("functor_function\n");
+	p_conn->logger->debug("functor_function\n");
 
 	rc = modbus_receive(p_ctx, query); /* receive mobus tcp query */
-	p_curConn->logger->debug("modbus_receive:%i", rc);
+	p_conn->logger->debug("modbus_receive:%i", rc);
 
 	if (rc != -1) {
 
@@ -243,21 +241,20 @@ void Connection::ConnFunctor::functor_function(void) {
 		slave = query[offset - 1];				//get slaveID
 		function = query[offset];				//get mb function code
 
-		p_curConn->logger->debug("query[slave]:0x%x", slave);
-		p_curConn->logger->debug("query[function]:0x%x", function);
+		p_conn->logger->debug("query[slave]:0x%x", slave);
+		p_conn->logger->debug("query[function]:0x%x", function);
 		{
 			///lock list access @todo use shared lock
-			std::lock_guard<std::mutex> lock(
-					*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex().get()));
+			//std::lock_guard<std::mutex> lock(*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex().get()));
 
-			VirtualRTUSlave *tmp_slave =
-					dynamic_cast<VirtualRTUSlave *>(boost::serialization::singleton<
+			shared_ptr<VirtualRTUSlave> tmp_slave =
+					dynamic_pointer_cast<VirtualRTUSlave>(boost::serialization::singleton<
 							SlaveList>::get_mutable_instance().getSlave(slave));
-			p_curConn->logger->debug("slave[0x%x]:0x%x", slave, tmp_slave);
+			p_conn->logger->debug("slave[0x%x]:0x%x", slave, tmp_slave.get());
 
 
 
-			if (tmp_slave != NULL) {
+			if (tmp_slave.get() != NULL) {
 				switch (function) {
 				case _FC_READ_INPUT_REGISTERS:
 				case _FC_READ_HOLDING_REGISTERS:
@@ -265,10 +262,10 @@ void Connection::ConnFunctor::functor_function(void) {
 					 * read operations
 					 * -> handle ReadAccess by handleQuery
 					 */
-					if (p_curConn->handleQuery(query, tmp_slave, handleReadAccess)) {
+					if (p_conn->handleQuery(query, tmp_slave, handleReadAccess)) {
 						rc = modbus_reply(p_ctx, query, rc,
 								tmp_slave->getMappingDB());
-						p_curConn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", p_ctx->s,
+						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", p_ctx->s,
 								tmp_slave->getMappingDB(),
 								rc);
 					} else {
@@ -284,12 +281,12 @@ void Connection::ConnFunctor::functor_function(void) {
 					 *  -> extract data from query by modbus library to database
 					 *  -> handle writeAccess by handleQuery(ThreadPool ?)
 					 */
-					if (p_curConn->handleQuery(query, tmp_slave, checkWriteAccess)) {
+					if (p_conn->handleQuery(query, tmp_slave, checkWriteAccess)) {
 						rc = modbus_reply(p_ctx, query, rc,tmp_slave->getMappingDB());
-						p_curConn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", p_ctx->s,
+						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", p_ctx->s,
 								tmp_slave->getMappingDB(),
 								rc);
-						p_curConn->handleQuery(query, tmp_slave, handleWriteAccess);
+						p_conn->handleQuery(query, tmp_slave, handleWriteAccess);
 					} else {
 						modbus_reply_exception(p_ctx, query,
 								MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
@@ -309,16 +306,16 @@ void Connection::ConnFunctor::functor_function(void) {
 					break;
 				}
 			} else {
-				p_curConn->logger->error("slave not registred: modbus_reply_exception");
+				p_conn->logger->error("slave not registred: modbus_reply_exception");
 				modbus_reply_exception(p_ctx, query,
 						MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 
 			}
 		}
 
-		p_curConn->setStatus(open);
+		p_conn->setStatus(open);
 	} else {
-		p_curConn->setStatus(closed);
+		p_conn->setStatus(closed);
 	}
 }
 

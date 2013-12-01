@@ -27,9 +27,12 @@
 //std libs
 #include <stdint.h>
 #include <list>
-#include <memory>
-#include <thread>
-using namespace std;
+
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+  #include <memory>
+  #include <thread>
+  using namespace std;
+#endif
 
 //MB_Framework
 #include <MBServer.h>
@@ -44,7 +47,7 @@ namespace MB_Gateway {
 
 class Server : public MBServer, public Logger{
 public:
-	Server(uint16_t port);
+	Server(uint16_t port, shared_ptr<ThreadPool> ext_pool);
 	virtual ~Server();
 
 private:
@@ -62,13 +65,13 @@ private:
 	 */
 	void connection_handler(void);
 
-	unique_ptr<std::thread> m_server_thread;
-	unique_ptr<std::thread> m_conn_handler_thread;
+	unique_ptr<thread> m_server_thread;
+	unique_ptr<thread> m_conn_handler_thread;
 
 	bool m_server_running;
 	int m_server_socket;
 
-	unique_ptr<ThreadPool> pool;
+	shared_ptr<ThreadPool> pool;
 
 };
 

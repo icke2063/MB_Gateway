@@ -24,9 +24,11 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
-#include <memory>
-#include <mutex>
-using namespace std;
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+  #include <memory>
+  #include <mutex>
+  using namespace std;
+#endif
 
 #include <MBConnection.h>
 
@@ -47,24 +49,19 @@ using namespace icke2063::common_cpp;
 namespace icke2063 {
 namespace MB_Gateway {
 
-class Connection: public MBConnection, public Logger{
+class Connection: public MBConnection, public Logger, public enable_shared_from_this<Connection>{
 
 	/**
 	 * Functor class for request handling by ThreadPool
 	 */
-	class ConnFunctor: public FunctorInt{
+	class ConnFunctor: public Functor{
 	public:
-		ConnFunctor(Connection *conn):p_conn(conn){
-		  p_conn_status = conn->m_status;
-		  p_conn_lock = conn->m_conn_lock;
-		}
+		ConnFunctor(shared_ptr<Connection> conn):p_conn(conn){}
 		virtual ~ConnFunctor(){}
 
 	private:
 		virtual void functor_function(void);
-		Connection *p_conn;
-		shared_ptr<enum conn_status> p_conn_status;
-		shared_ptr<std::mutex> p_conn_lock;
+		shared_ptr<Connection> p_conn;
 	};
 
 	friend class ConnFunctor;	//ok lets play together ;-)
@@ -79,7 +76,7 @@ public:
 	Connection(modbus_t *ctx);
 	virtual ~Connection();
 	modbus_t *getConnInfo (void){return &m_ctx;}
-	shared_ptr<std::mutex> getLock(){return m_conn_lock;}
+	
 	/**
 	 * Threadpool functor creator
 	 * create functor object for ThreadPool handling
@@ -87,7 +84,7 @@ public:
 	 * - use functions of this class to handle query
 	 * @return
 	 */
-	shared_ptr<FunctorInt> getFunctor( void ){return shared_ptr<FunctorInt>(new Connection::ConnFunctor(this));}
+	shared_ptr<Functor> getFunctor( void ){return shared_ptr<Functor>(new Connection::ConnFunctor(shared_from_this()));}
 
 private:
 	bool m_connection_running;
@@ -99,11 +96,10 @@ private:
 	 * @param mode:			handle mode (read, write, check)
 	 * @return
 	 */
-	bool handleQuery(uint8_t* query, VirtualRTUSlave* tmp_slave, enum handleQuery_mode mode);
+	bool handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_slave, enum handleQuery_mode mode);
 
 	/* connection information from libmodbus library */
 	modbus_t m_ctx;
-	shared_ptr<std::mutex> m_conn_lock;
 };
 } /* namespace MB_Gateway */
 } /* namespace icke2063 */

@@ -10,10 +10,20 @@
 #ifndef WEBINTERFACE_H_
 #define WEBINTERFACE_H_
 
-//ext lib
-#include <memory>
-#include <thread>
-using namespace std;
+
+//std lib
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+  #include <memory>
+  #include <thread>
+  using namespace std;
+#else
+  #include <boost/shared_ptr.hpp>
+  #include <boost/thread.hpp>
+  using namespace boost;
+  
+  #define unique_ptr shared_ptr
+#endif
+
 
 #include <tnt/tntnet.h>
 
@@ -34,7 +44,7 @@ private:
 	uint16_t m_port;
 	unique_ptr<tnt::Tntnet> server;
 
-	unique_ptr<std::thread> p_server_thread;
+	unique_ptr<thread> p_server_thread;
 	bool m_running;
 
 	virtual void thread_function (void);

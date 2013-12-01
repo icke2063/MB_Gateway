@@ -11,6 +11,14 @@
 #include <stddef.h>
 #include <string.h>
 
+
+//std lib
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+ 
+#else
+  #define nullptr NULL
+#endif
+
 #include <HandlerList.h>
 #include <I2CComm.h>
 
@@ -166,12 +174,11 @@ bool IOBoard_Slave::init(void) {
 	shared_ptr<HolRegHandler> Holding;
 	shared_ptr<HolRegHandlerRO> HoldingRO;
 
-	std::lock_guard<std::mutex> lock(
-			*(((Mutex*)(boost::serialization::singleton<HandlerList>::get_mutable_instance().m_handlerlist_lock.get()))->getMutex().get()));
-	list<shared_ptr<MBHandlerInt>> *phandlerlist = &(boost::serialization::singleton<
+	lock_guard<mutex> lock(*(boost::serialization::singleton<HandlerList>::get_mutable_instance().m_handlerlist_lock.get()));
+	list<shared_ptr<MBHandlerInt> > *phandlerlist = &(boost::serialization::singleton<
 			HandlerList>::get_mutable_instance().m_handlerlist);
 
-	list<shared_ptr<MBHandlerInt>>::iterator handler_it = phandlerlist->begin(); // get first handler
+	list<shared_ptr<MBHandlerInt> >::iterator handler_it = phandlerlist->begin(); // get first handler
 
 	while (handler_it != phandlerlist->end()) {
 	  shared_ptr<MBHandlerInt> listitem =*handler_it;

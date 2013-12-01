@@ -27,8 +27,12 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <thread>
-using namespace std;
+
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+  #include <thread>
+  using namespace std;
+#endif
+
 
 #include <sys/select.h>
 #include <boost/concept_check.hpp>
@@ -39,14 +43,13 @@ using namespace std;
 #include "modbus-private.h"
 
 #include "Connection.h"
-#include "Mutex.h"
 
 #include <DummyFunctor.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
 
-Server::Server(uint16_t port):
+Server::Server(uint16_t port, shared_ptr<ThreadPool> ext_pool):
 		MBServer(port),
 		m_server_running(true),m_server_socket(-1){
 	/*
@@ -61,13 +64,17 @@ Server::Server(uint16_t port):
 
 	logger->info("Modbus TCP Server@%i",m_port);
 
-	m_conn_lock.reset(new MB_Gateway::Mutex);
+	m_conn_lock.reset(new mutex());
 
-	pool.reset(new ThreadPool());	//get new ThreadPool
-	pool->setHighWatermark(5);
+	if(ext_pool.get()){
+	  pool = ext_pool;
+	} else {
+	  pool = shared_ptr<ThreadPool>(new ThreadPool());
+	  pool->setHighWatermark(5);
+	}
 	
-	m_server_thread.reset(new std::thread(&Server::waitForConnection, this));	// create new scheduler thread
-	m_conn_handler_thread.reset(new std::thread(&Server::connection_handler, this));
+	m_server_thread.reset(new thread(&Server::waitForConnection, this));	// create new scheduler thread
+	m_conn_handler_thread.reset(new thread(&Server::connection_handler, this));
 }
 
 Server::~Server() {
@@ -141,7 +148,7 @@ void Server::waitForConnection(void){
 			logger->debug("modbus_tcp_accept:%i",ctx_tmp->s);
 
 			if(m_conn_lock.get() != NULL){
-				std::lock_guard<std::mutex> lock(*((MB_Gateway::Mutex*)m_conn_lock.get())->getMutex().get());
+				lock_guard<mutex> lock(*m_conn_lock.get());
 				openConnections.push_back(shared_ptr<Connection>(new Connection(ctx_tmp)));
 			}
 			modbus_free(ctx_tmp);
@@ -162,8 +169,8 @@ void Server::connection_handler (void){
     int maxFD=0;
     struct timeval tv;
     int retval;
-    list<shared_ptr<MBConnection>>::iterator conn_it;
-    Connection *curConn = NULL;
+    std::list<shared_ptr<MBConnection> >::iterator conn_it;
+    shared_ptr<Connection> curConn;
 
 
     while (m_server_running) {
@@ -177,15 +184,15 @@ void Server::connection_handler (void){
 
 
 		if(m_conn_lock.get() != NULL){
-			std::lock_guard<std::mutex> lock(*((MB_Gateway::Mutex*)m_conn_lock.get())->getMutex().get());
+			lock_guard<mutex> lock(*m_conn_lock.get());
 
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
 				shared_ptr<MBConnection> tmpConn = *conn_it;
-				curConn =  dynamic_cast<MB_Gateway::Connection *> (tmpConn.get());
+				curConn =  dynamic_pointer_cast<Connection> (tmpConn);
 
-				if(curConn && curConn->getStatus() == MBConnection::open){//add open connection into set
+				if(curConn.get() && curConn->getStatus() == MBConnection::open){//add open connection into set
 					FD_SET(curConn->getConnInfo()->s, &rfds);
 					if(maxFD < curConn->getConnInfo()->s)maxFD = curConn->getConnInfo()->s;
 				}
@@ -216,17 +223,20 @@ void Server::connection_handler (void){
 				continue;
 			}
 
+			logger->debug("handle connecton: %d\n",openConnections.size());
 
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				shared_ptr<MBConnection> tmpConn = *conn_it;
-				curConn =  dynamic_cast<MB_Gateway::Connection *> (tmpConn.get());
-
-				if(curConn && FD_ISSET(curConn->getConnInfo()->s, &rfds)){//add open connection into set
+				curConn =  dynamic_pointer_cast<Connection>(*conn_it);
+				if(curConn.get())logger->debug("found connection\n");
+				if(curConn.get() && FD_ISSET(curConn->getConnInfo()->s, &rfds)){//add open connection into set
 					curConn -> setStatus(MBConnection::busy);
+					logger->debug("drin\n");
 					//use threadpool
-					pool->addFunctor(curConn->getFunctor());
+					if(!pool->addFunctor(curConn->getFunctor())){
+					  logger->error("Functor not added\n");
+					}
 				}
 				++conn_it;
 			}

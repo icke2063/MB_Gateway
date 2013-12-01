@@ -24,12 +24,15 @@
 #ifndef SLAVELIST_H_
 #define SLAVELIST_H_
 
+//c++11
+#include <memory>
+using namespace std;
+
 #include <MBSlaveList.h>
 #include <MBVirtualRTUSlave.h>
 
 using namespace icke2063::MB_Framework;
 
-#include <Mutex.h>
 #include <ThreadPool.h>
 
 namespace icke2063 {
@@ -37,57 +40,14 @@ namespace MB_Gateway {
 
 class SlaveList: public MB_Framework::MBSlaveList {
 public:
-	SlaveList() {
-		m_slavelist_lock.reset(new Mutex);
-	}
+	SlaveList();
+	virtual ~SlaveList();
 
-	virtual ~SlaveList() {}
+	virtual bool addSlave(shared_ptr<MBVirtualRTUSlave> newSlave);
+	virtual shared_ptr<MBVirtualRTUSlave> removeSlave(uint8_t index);
+	virtual shared_ptr<MBVirtualRTUSlave> getSlave(uint8_t index);
 
-	virtual bool addSlave(MBVirtualRTUSlave *newSlave) {
-		MBVirtualRTUSlave *curSlave = dynamic_cast<MBVirtualRTUSlave*>(newSlave);
-		uint8_t index;
-
-		if(curSlave == NULL)return false;
-		index = curSlave->getSlaveAddr();
-		std::lock_guard<std::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex().get()); //lock slavelist
-
-		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave already added?
-		if (it == m_slavelist.end()) {
-			m_slavelist[index] = newSlave;
-			return true;
-		}
-
-		return false;
-	}
-
-	virtual MBVirtualRTUSlave *removeSlave(uint8_t index) {
-		MBVirtualRTUSlave* result = NULL;
-		std::lock_guard<std::mutex> lock(*((Mutex* )m_slavelist_lock.get())->getMutex().get()); //lock slavelist
-
-		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave in list?
-		if (it != m_slavelist.end()) {
-			result = it->second; //get pointer
-			m_slavelist.erase(it); //remove from list
-		}
-
-		return result;
-	}
-
-	virtual void deleteSlave(uint8_t index) {
-		MBVirtualRTUSlave* slave = removeSlave(index); //remove slave from list
-		if (slave != NULL)
-			delete slave; //delete if object exist
-	}
-
-	virtual MBVirtualRTUSlave *getSlave(uint8_t index) {
-		map<uint8_t, MBVirtualRTUSlave*>::iterator it = m_slavelist.find(index); //slave in list?
-		if (it != m_slavelist.end()) {
-			return it->second; //get pointer
-		}
-		return NULL;
-	}
-
-	Mutex *getLock(){return (Mutex *)m_slavelist_lock.get();}
+	//shared_ptr<Mutex> getLock();
 };
 
 } /* namespace MB_Gateway */

@@ -10,7 +10,6 @@
 #ifndef HANDLERLIST_H_
 #define HANDLERLIST_H_
 
-#include <Mutex.h>
 #include <MBHandlerList.h>
 
 using namespace icke2063::MB_Framework;
@@ -22,7 +21,7 @@ namespace MB_Gateway {
 class HandlerList:public MBHandlerList {
 public:
 	HandlerList() {
-		m_handlerlist_lock.reset(new Mutex);
+		m_handlerlist_lock.reset(new mutex());
 
 	}
 	virtual ~HandlerList() {}
