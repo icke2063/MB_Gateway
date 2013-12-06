@@ -27,14 +27,15 @@ include_directories(/usr/include)
 include_directories(libmodbus)
 include_directories(libmodbus/src)
 
+add_subdirectory (common_cpp)
+
 #default includes
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/inc
 	${CMAKE_CURRENT_SOURCE_DIR}/MB_Framework/inc
-	${CMAKE_CURRENT_SOURCE_DIR}/common_cpp/include
+	${common_cpp_INC}
 )
 
-add_subdirectory (common_cpp)
 add_subdirectory (MB_Framework)
 
 #get_cmake_property(_variableNames VARIABLES)

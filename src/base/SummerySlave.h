@@ -36,6 +36,7 @@
 
 using namespace icke2063::MB_Framework;
 using namespace icke2063::common_cpp;
+using namespace icke2063::threadpool;
 
 namespace icke2063 {
 namespace MB_Gateway {

@@ -39,8 +39,10 @@
 using namespace icke2063::MB_Framework;
 
 #include <Logger.h>
-#include <ThreadPool.h>
 using namespace icke2063::common_cpp;
+
+#include <ThreadPool.h>
+using namespace icke2063::threadpool;
 
 namespace icke2063 {
 namespace MB_Gateway {
