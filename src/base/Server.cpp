@@ -81,6 +81,8 @@ Server::~Server() {
 	logger->info("enter ~Server");
 	m_server_running = false;
 	if(m_server_thread.get() && m_server_thread->joinable())m_server_thread->join();
+	if(m_conn_handler_thread.get() && m_conn_handler_thread->joinable())m_conn_handler_thread->join();
+
 	logger->info("leave ~Server");
 }
 
