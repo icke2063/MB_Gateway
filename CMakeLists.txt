@@ -15,9 +15,11 @@ if(C++11 AND USE_C++11_SUPPORT)
 ADD_DEFINITIONS(-std=c++0x)
   #enable c++11
   enable_cxx11()
+  message(STATUS "use C++11")
 else()
   #use boost fallback
   FIND_PACKAGE(Boost COMPONENTS thread system serialization chrono REQUIRED)
+  message(STATUS "use boost")
 endif()
 
 
