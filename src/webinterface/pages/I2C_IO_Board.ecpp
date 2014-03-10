@@ -36,6 +36,7 @@ using namespace icke2063::MB_Gateway::I2C;
 uint8_t vio_count = 0;
 uint8_t vio_port_count = 0;
 map<uint8_t,uint8_t> pin_function;
+int glob_write_enable = 0;
 string messages("");
 </%request>
 
@@ -49,10 +50,46 @@ string messages("");
 int SlaveNr = 0;	// slave number: slot on which virtual RTU slave can be addressed
 string request_table_io_board_viopin;	// marker for post data
 int debug = 0;	// debug flag
+int info = 0;	// info flag
 string button = "";	// button value to 
 </%args>
 <div id="ioboard_form">
 	<h1>I2C IO Board</h1>
+%if(info == 1){
+<table>
+<tr><th>Name</th><th>Wert</th><th>Type</th></tr>
+<tr><td>I2C_BUFFER_SIZE</td><td><$ I2C_BUFFER_SIZE $></td><td>RAM-Length</td></tr>
+
+<tr><td>ID</td><td><$ 0 $></td><td>RAM-Address</td></tr>
+<tr><td>ID</td><td><$ 1 $></td><td>RAM-Address</td></tr>
+
+<tr><td>EEPROM_WRITE_ENABLE</td><td><$ EEPROM_WRITE_ENABLE $></td><td>RAM-Address</td></tr>
+<tr><td>EEPROM_WRITE_CODE</td><td><$ EEPROM_WRITE_CODE $></td><td>RAM-Value</td></tr>
+
+<tr><td>VERSION_START</td><td><$ VERSION_START $></td><td>RAM-Address</td></tr>
+<tr><td>VERSION_LENGTH</td><td><$ VERSION_LENGTH $></td><td>RAM-Length</td></tr>
+
+<tr><td>VIRTUAL_IO_COUNT</td><td><$ VIRTUAL_IO_COUNT $></td><td>RAM-Address</td></tr>
+<tr><td>VIRTUAL_IO_COUNT</td><td><$ VIRTUAL_IO_COUNT+1 $></td><td>RAM-Address</td></tr>
+
+<tr><td>VIRTUAL_IO_START</td><td><$ VIRTUAL_IO_START $></td><td>RAM-Address</td></tr>
+<tr><td>VIRTUAL_DATA_START</td><td><$ VIRTUAL_DATA_START $></td><td>RAM-Address</td></tr>
+
+
+
+<tr><td>EEPROM_SIZE</td><td><$ EEPROM_SIZE $></td><td>EEPROM-Length</td></tr>
+<tr><td>I2C ADDRESS</td><td><$ 0 $></td><td>EEPROM-Address</td></tr>
+
+<tr><td>EEPROM_PULSE_TIME</td><td><$ EEPROM_PULSE_TIME $></td><td>EEPROM-Address</td></tr>
+
+<tr><td>EEPROM_DATA_START</td><td><$ EEPROM_DATA_START $></td><td>EEPROM-Address</td></tr>
+<tr><td>EEPROM_FUNC_START</td><td><$ EEPROM_FUNC_START $></td><td>EEPROM-Address</td></tr>
+<tr><td>EEPROM_NAME_START</td><td><$ EEPROM_NAME_START $></td><td>EEPROM-Address</td></tr>
+<tr><td>IO_BOARD_MAX_IO_PIN_NAME_LENGTH</td><td><$ IO_BOARD_MAX_IO_PIN_NAME_LENGTH $></td><td>EEPROM-Length</td></tr>
+
+</table>
+%}
+</%cpp>
 <%cpp>
 shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 if( p_slave != NULL ){
@@ -96,6 +133,21 @@ if( p_slave != NULL ){
 		pin_function[pin] = p_io_board->getMappingDB()->tab_registers[i2c_address/2] >> 8 ;
 	}
 	
+	//eeprom write enable
+	bool i2c_open = false;
+	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+	
+	memset(recvbuffer, 0, 2);
+	recvbuffer[0] = (EEPROM_WRITE_ENABLE >> 8); //first high
+	recvbuffer[1] = (EEPROM_WRITE_ENABLE & 0xff); //second low
+	 
+	if(i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)){
+		if((recvbuffer[0] == EEPROM_WRITE_CODE) && (recvbuffer[1] == EEPROM_WRITE_CODE)){
+			glob_write_enable = 1;
+		} else {
+			glob_write_enable = -1;
+		}
+	}
 </%cpp>
 
 %if(debug > 1){
@@ -107,10 +159,10 @@ DEBUG OUTPUT<br>
 %	}
 %}
 %if(button == "Absenden"){
-	<& handle_request_write_enable handle_form=true qparam>
 	<& handle_request_pin_action qparam >
 	<& handle_func_select qparam >
 %}
+%if(button == "DB update"){p_io_board->getSlaveInfo();}
 <$ messages $>
 <table id="table_io_board_info">
 	<tr>
@@ -123,7 +175,7 @@ DEBUG OUTPUT<br>
 		<# Aktion #>
 		<th>Aktion</th>
 	</tr>
-	<tr>
+	<tr><# little I2C address formular #>
 		<form action="<$ request.getUrl() $>" method="post" accept-charset="ISO-8859-1">
 			<input type='hidden' name='request_i2c_io_board' value='chgaddr' />
 			<td>I2C Add:</td>
@@ -132,13 +184,13 @@ DEBUG OUTPUT<br>
 			<td><input type="submit" value="Ändern"></td>
 		</form>
 	</tr>
-	<tr>
+	<tr><# numeric slave type value #>
 		<td>Type:</td>
 		<td><$$ (int)p_slave->getType() $></td>
 		<td></td>
 		<td></td>
 	</tr>
-	<tr>
+	<tr><# git software version #>
 		<td>Soft.Ver.:</td>
 		<td>
 <%cpp>
@@ -149,6 +201,14 @@ DEBUG OUTPUT<br>
 		</td>
 		<td></td>
 		<td></td>
+	</tr>
+	<tr>
+	<form action="<$ request.getUrl() $>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">
+		<td>R/W</td>
+		<td><& form_elem_write_enable write_enable=((int)glob_write_enable) qparam></td>
+		<td></td>
+		<td><input type="submit" value="Ändern"></td>
+	</form>
 	</tr>
 </table>
 
@@ -168,7 +228,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
 	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
 </%cpp>
-		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
+		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>[<$ (glob_write_enable==1)?(int)i2c_address:0 $>]:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
 %}
 	</tr>
 <########## ~pin number/name/status ##########>
@@ -177,7 +237,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	<tr>
 %for(pin=0;pin<12;pin=pin+2){
 		<td>
-			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) >
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=glob_write_enable >
 			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
 		</td>
 %}
@@ -199,7 +259,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
 	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
 </%cpp>
-		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
+		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>[<$ (glob_write_enable==1)?(int)i2c_address:0 $>]:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
 %}
 	</tr>
 <########## ~pin number/name/status ##########>
@@ -208,7 +268,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	<tr>
 %for(pin=12;pin<16;pin++){
 		<td>
-			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) >
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=((int)glob_write_enable)>
 			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
 		</td>
 %}
@@ -222,14 +282,11 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 %}else{	
 	<tr style="height:30px"></tr>
 %}
-	<tr><td><& elem_write_enable handle_form=((request_table_io_board_viopin == "data")?true:false) qparam></tr></td>
-	
-	<tr style="height:30px"></tr>
 <####### pin function code #######>
 	<tr>
 %for(pin=1;pin<12;pin=pin+2){
 		<td>
-			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) >
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=((int)glob_write_enable)>
 			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
 
 		</td>
@@ -246,13 +303,14 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
 	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
 </%cpp>
-	<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
+	<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>[<$ (glob_write_enable==1)?(int)i2c_address:0 $>]:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
 %}
 	</tr>
 <########## ~pin name ##########>
 	</table>
 <input type="submit" name="button" value="Absenden">
 <input type="submit" name="button" value="Aktualisieren">
+<input type="submit" name="button" value="DB update">
 </form>
 %} else {
 Slave not found
@@ -339,7 +397,9 @@ if(request_table_io_board_viopin != ""){
 <%args>
 int pinNr = 0;
 int func_code = 0;
+int write_enable = 0;
 </%args>
+%if(write_enable >= 0){
 <select name="vio_func" size="1">
 	<option value="<$ func_code == PIN_DISABLED?(255<<8):(uint16_t)((pinNr<<8) | PIN_DISABLED) $>" <$ func_code == PIN_DISABLED?"selected":"" $>>disabled</option>
 	<option value="<$ func_code == PIN_INPUT?(255<<8):(uint16_t)((pinNr<<8) | PIN_INPUT) $>" <$ func_code == PIN_INPUT?"selected":"" $>>input</option>
@@ -347,6 +407,14 @@ int func_code = 0;
 	<option value="<$ func_code == PIN_TOGGLE?(255<<8):(uint16_t)((pinNr<<8) | PIN_TOGGLE) $>" <$ func_code == PIN_TOGGLE?"selected":"" $>>toggle</option>
 	<option value="<$ func_code == PIN_PULSE?(255<<8):(uint16_t)((pinNr<<8) | PIN_PULSE) $>" <$ func_code == PIN_PULSE?"selected":"" $>>pulse</option>
 </select>
+%}else{
+<$ func_code == PIN_DISABLED?"disabled":"" $>
+<$ func_code == PIN_INPUT?"input":"" $>
+<$ func_code == PIN_SWITCH?"switch":"" $>
+<$ func_code == PIN_TOGGLE?"toggle":"" $>
+<$ func_code == PIN_PULSE?"pulse":"" $>
+
+%} 
 </%def>
 
 <################################>
@@ -506,30 +574,38 @@ style="color: <$ text_color $>; background-color: <$ back_color $>; height: 10px
 <####################################>
 <# elem: eeprom write enable		#>
 <####################################>
-<%def elem_write_enable>
+<%def form_elem_write_enable>
 <%args>
 int SlaveNr = 0;
+int write_enable = 0;
 </%args>
+<& handle_request_write_enable qparam>
 <%cpp>
 	uint8_t recvbuffer[4];
 	bool i2c_open = false;
-	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
-
-	
 	string checked = "";
 	
-	memset(recvbuffer, 0, 2);
-	recvbuffer[0] = (EEPROM_WRITE_ENABLE >> 8); //first high
-	recvbuffer[1] = (EEPROM_WRITE_ENABLE & 0xff); //second low
+	if(write_enable == 0){
+		//get data by i2c request
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+
+		memset(recvbuffer, 0, 2);
+		recvbuffer[0] = (EEPROM_WRITE_ENABLE >> 8); //first high
+		recvbuffer[1] = (EEPROM_WRITE_ENABLE & 0xff); //second low
 	 
-	if(i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)){
-		if((recvbuffer[0] == EEPROM_WRITE_CODE) && (recvbuffer[1] == EEPROM_WRITE_CODE)) checked = "checked";
-	}else{
+		if(i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)){
+			if((recvbuffer[0] == EEPROM_WRITE_CODE) && (recvbuffer[1] == EEPROM_WRITE_CODE)) checked = "checked";
+		}else{
 </%cpp>
-		eeprom write error
+			eeprom write error
 <%cpp>
+		}
+	} else {
+		//get data by param
+		if(write_enable == 1)checked = "checked";
 	}
 </%cpp>
+	<input type='hidden' name='request_elem_write_enable' value='data' />
 	<input type="checkbox" name="eeprom_write_enable" value="1" <$ checked $>>EEPROM write enable[<$ (int)recvbuffer[0] $>;<$ (int)recvbuffer[1] $>]
 </%def>
 
@@ -539,21 +615,22 @@ int SlaveNr = 0;
 <###############################>
 <%def handle_request_write_enable>
 <%args>
-std::string eeprom_write_enable = "";
+std::string request_elem_write_enable ="";
+
+int eeprom_write_enable = 0;
 int SlaveNr = 0;
-bool handle_form = false;
 int debug = 0;
 </%args>
 <%cpp>
 	uint8_t recvbuffer[4];
 	bool i2c_open = false;
-	if(handle_form){
+	if(request_elem_write_enable == "data"){
 		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
 		
 		recvbuffer[0] = (EEPROM_WRITE_ENABLE >> 8); //first high
 		recvbuffer[1] = (EEPROM_WRITE_ENABLE & 0xff); //second low
 	
-		if(eeprom_write_enable == "1"){
+		if(eeprom_write_enable == 1){
 			recvbuffer[2] = EEPROM_WRITE_CODE;
 			recvbuffer[3] = EEPROM_WRITE_CODE;
 		}else{
