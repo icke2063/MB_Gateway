@@ -49,7 +49,11 @@ int8_t offset =1;
 	
 	  
 	unique_ptr<Server> default_server(new Server(502,pool));
-//	auto_ptr<Server> custom_server;
+
+	default_server.reset(NULL);
+
+
+//	unique_ptr<Server> custom_server;
 #ifdef I2C_SUPPORT
 	unique_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
 #endif
