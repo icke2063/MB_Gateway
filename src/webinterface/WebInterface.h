@@ -20,8 +20,9 @@
   #include <boost/shared_ptr.hpp>
   #include <boost/thread.hpp>
   using namespace boost;
-  
-  #define unique_ptr shared_ptr
+#ifndef unique_ptr
+  #define unique_ptr scoped_ptr
+#endif
 #endif
 
 
