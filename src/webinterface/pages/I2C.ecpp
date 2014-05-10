@@ -6,6 +6,8 @@
 <& common_functions.footer qparam >
 
 <%pre>
+#include <stddef.h>
+
 #include <vector>
 using namespace std;
 
@@ -32,7 +34,7 @@ using namespace icke2063::MB_Gateway::I2C;
 int SlaveNr = 0;
 int i2c_address_mode = 1;
 int i2c_data_mode = 1;
-int i2c_max_stringlength = 20;
+size_t i2c_max_stringlength = 20;
 
 int i2c_address = -1;
 
@@ -92,7 +94,7 @@ if(btn_i2c_form == "Write"){
 					length = 1;
 				}
 				if(i2c_data_mode == 2){
-					length =  (i2c_string.size()>i2c_max_stringlength)?i2c_max_stringlength:i2c_string.size();
+					length =  (i2c_string.size() > i2c_max_stringlength)?i2c_max_stringlength:i2c_string.size();
 					memcpy(&recvbuffer[2], i2c_string.c_str(), length);
 					
 				}
