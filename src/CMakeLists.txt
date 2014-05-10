@@ -32,7 +32,6 @@ set (DEF_SOURCES
 	base/SummerySlave.cpp
 	base/handler/DefaultHandler.cpp
 	base/handler/MultiRegisterHandler.cpp
-	base/DummyFunctor.cpp
 )
 	
 
@@ -97,10 +96,16 @@ add_executable (${PROJECT_NAME} base/MB_Gateway.cpp
 ### ADD PREPROCESS MACROS ###
 
 ### LINK LIBRARIES ###
+if(C++11 AND USE_C++11_SUPPORT)
+    target_link_libraries(${PROJECT_NAME} pthread)
+else()
+    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+endif()
+
+
 #default libraries
 target_link_libraries(${PROJECT_NAME}
 	${MODBUS_LIB}
-	${Boost_LIBRARIES}
 	${LOG4CPP}
 	common_cpp-shared
 	tntnet
