@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.6)
 project (crumby)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
+
 #support switches
 option(I2C_SUPPORT "compile with I2C support" ON)
 option(USE_C++11_SUPPORT "use c++11 if available" ON)
