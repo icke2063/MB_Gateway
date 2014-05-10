@@ -51,8 +51,8 @@ if(m_delayed_pool.get()){
     logger->info("addFunctor\n");
   struct timeval now;
   gettimeofday(&now,NULL);
-  m_delayed_pool->addDelayedFunctor(shared_ptr<SummerySlaveFunctor>(new SummerySlaveFunctor(shared_from_this())),now);
-  
+  m_delayed_pool->addDelayedFunctor(new SummerySlaveFunctor(shared_from_this()), &now);
+
 }
   
 }
@@ -110,7 +110,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 		  struct timeval now;
 		  gettimeofday(&now,NULL);
 		  now.tv_usec += 100;
-		 m_slave->m_delayed_pool->addDelayedFunctor(shared_from_this(),now);
+		 m_slave->m_delayed_pool->addDelayedFunctor(new SummerySlaveFunctor(m_slave),&now);
 	}
 }
 

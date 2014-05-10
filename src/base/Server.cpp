@@ -29,8 +29,12 @@
 #include <stdlib.h>
 
 #if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
-  #include <thread>
+  #include <mutex>
   using namespace std;
+#else
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
+  using namespace boost;
 #endif
 
 
@@ -144,7 +148,7 @@ void Server::waitForConnection(void){
 		modbus_t *ctx_tmp;
 		ctx_tmp = modbus_new_tcp("127.0.0.1", m_port);
 
-		cout << "before modbus accept" << endl;
+		std::cout << "before modbus accept" << std::endl;
 		if (modbus_tcp_accept(ctx_tmp, &m_server_socket) != -1) {
 
 			logger->debug("modbus_tcp_accept:%i",ctx_tmp->s);

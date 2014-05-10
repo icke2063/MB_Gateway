@@ -11,8 +11,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <memory>
-using namespace std;
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+  #include <memory>
+  using namespace std;
+#else
+  #include <boost/scoped_ptr.hpp>
+  using namespace boost;
+#endif
+
 
 #include <sys/time.h>
 
@@ -41,25 +47,35 @@ using namespace icke2063::MB_Gateway;
 int main() {
 
 	shared_ptr<ThreadPool> pool(new ThreadPool());
-	pool->startPoolLoop();
 	pool->setHighWatermark(10);
 	pool->setLowWatermark(1);
 	
-	  
+
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
 	unique_ptr<Server> default_server(new Server(502,pool));
+#else
+	scoped_ptr<Server> default_server(new Server(502,pool));
+#endif
+	  
 
-	default_server.reset(NULL);
-
-
-//	unique_ptr<Server> custom_server;
+	//	unique_ptr<Server> custom_server;
 #ifdef I2C_SUPPORT
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
 	unique_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
+#else
+	scoped_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
+#endif
 #endif
 	shared_ptr<SummerySlave> sum = shared_ptr<SummerySlave>(new SummerySlave(pool,255));
 	sum->startFunctor();
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(sum);
-	
+
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
 	unique_ptr<WebInterface> webint(new WebInterface());
+#else
+	scoped_ptr<WebInterface> webint(new WebInterface());
+#endif
+
 	
 
 	while (1) {

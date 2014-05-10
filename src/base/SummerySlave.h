@@ -45,7 +45,9 @@ class SummerySlave: public VirtualRTUSlave, public Logger, public enable_shared_
   
   class SummerySlaveFunctor: public Functor,public enable_shared_from_this<SummerySlaveFunctor>{
   public:
-    SummerySlaveFunctor(shared_ptr<SummerySlave> slave):m_slave(slave){}
+    SummerySlaveFunctor(shared_ptr<SummerySlave> slave):m_slave(slave){
+    	printf("SummerySlaveFunctor\n");
+    }
     virtual ~SummerySlaveFunctor(){}
 
     virtual void functor_function(void);

@@ -85,7 +85,7 @@ public:
 	 * - use functions of this class to handle query
 	 * @return
 	 */
-	shared_ptr<Functor> getFunctor( void ){return shared_ptr<Functor>(new Connection::ConnFunctor(shared_from_this()));}
+	Functor *getFunctor( void ){return new Connection::ConnFunctor(shared_from_this());}
 
 private:
 	bool m_connection_running;
