@@ -17,7 +17,6 @@ namespace MB_Gateway {
 
 int MultiRegisterHandler::handleReadAccess(MBHandlerParam *param) {
 	uint16_t address;
-	uint16_t i2c_address;
 	uint16_t register_count;
 
 	logger->debug("MultiRegisterHandler::handleReadAccess");
@@ -99,7 +98,6 @@ int MultiRegisterHandler::handleWriteAccess(MBHandlerParam *param) {
 	uint8_t slave;
 	uint16_t address;
 	uint16_t register_count;
-	uint8_t send_offset = 0, i;
 
 	logger->debug("MultiByteHandler::handleWriteAccess");
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
@@ -148,8 +146,6 @@ int MultiRegisterHandler::handleWriteAccess(MBHandlerParam *param) {
 }
 
 int MultiRegisterHandler::checkWriteAccess(MBHandlerParam *param) {
-	uint8_t slave;
-	uint16_t address;
 	uint16_t register_count;
 
 	logger->debug("MultiRegisterHandler::checkWriteAccess");

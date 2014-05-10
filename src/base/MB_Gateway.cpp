@@ -39,8 +39,6 @@ using namespace icke2063::MB_Gateway;
 
 
 int main() {
-int8_t max_functor = 1;
-int8_t offset =1;
 
 	shared_ptr<ThreadPool> pool(new ThreadPool());
 	pool->startPoolLoop();
@@ -64,37 +62,7 @@ int8_t offset =1;
 	unique_ptr<WebInterface> webint(new WebInterface());
 	
 
-	//ThreadPool pool;
-	
-	//pool.setHighWatermark(8);
-	//pool.setLowWatermark(1);
-	
-	//srand (time(NULL));
-	
-	//struct timeval now;
-
-	
 	while (1) {
-	/*
-	  max_functor = 30;
-		cout << "add:" << (int)max_functor  << endl;
-		for(int i=0;i<max_functor;i++){
-			
-		  shared_ptr<Functor> tmpFunctor = shared_ptr<Functor>(new Dummy_Functor());
-		  tmpFunctor->setPriority(rand() % 100);
-		  gettimeofday(&now,NULL);
-		  now.tv_sec += rand() % 10;
- 		  pool.addDelayedFunctor(tmpFunctor, now);
-		}
-
-
-		max_functor = max_functor + (offset);
-		offset *= 2;
-
-		if((max_functor + offset) > 100)offset = -1;
-		if(max_functor < 0){offset = 1;max_functor = 1;}
-*/
-
 		sleep(5);
 	}
 	return 0;

@@ -46,7 +46,7 @@ public:
 	}
 
 	virtual bool init(void) {
-		int i, e;
+		int i;
 		logger->info("init");
 
 		///add handler

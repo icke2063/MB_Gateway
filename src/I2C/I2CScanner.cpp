@@ -21,7 +21,8 @@ namespace MB_Gateway {
 namespace I2C {
 
 I2C_Scanner::I2C_Scanner(unsigned int timeout) :
-		m_timeout(timeout),m_running(true) {
+		m_running(true),
+		m_timeout(timeout) {
 	/**
 	 * Init Logging
 	 * - set category name

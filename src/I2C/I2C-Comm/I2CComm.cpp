@@ -70,7 +70,6 @@ bool I2C_Comm::Write_I2C_Bytes(unsigned char DEVICE_ADDR, uint8_t *databuffer,
 		size_t address_size, size_t write_size) {
 	size_t n = address_size + write_size;
 
-	unsigned char inbuf;
 	struct i2c_rdwr_ioctl_data packets;
 	struct i2c_msg messages[1];
 
@@ -137,13 +136,11 @@ bool I2C_Comm::Read_I2C_Bytes(unsigned char DEVICE_ADDR, uint8_t *databuffer,
 
 bool *I2C_Comm::ScanBus(void) {
 	int slave_adr = 0;
-	unsigned char retry;
 	uint8_t c;
 	if (m_i2cFD > 0) {
 		// loop over whole range
 		for (slave_adr = MIN_I2C_SLAVE_ADR; slave_adr <= MAX_I2C_SLAVE_ADR;
 				slave_adr++) {
-			retry = MAX_I2C_RETRY;
 			if (!i2cSetAddress(slave_adr))
 				return NULL;
 

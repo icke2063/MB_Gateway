@@ -153,7 +153,7 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 	uint16_t address;
 	uint16_t i2c_address;
 	uint16_t byte_count;
-	uint8_t send_offset = 0, i;
+	uint8_t send_offset = 0;
 	uint16_t ret = 0;
 
 	logger->debug("MultiByteHandler::handleWriteAccess[%i]", m_mode);
@@ -253,9 +253,6 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 }
 
 int MultiByteHandler::checkWriteAccess(MBHandlerParam *param) {
-	uint8_t slave;
-	uint16_t address;
-	uint16_t i2c_address;
 	uint16_t byte_count;
 
 	logger->debug("MultiByteHandler::checkWriteAccess");
