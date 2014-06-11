@@ -16,6 +16,8 @@
 #include <IOBoardSlave.h>
 #include <SlaveList.h>
 
+using namespace I2CSCANNER_H_NS;
+
 namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {

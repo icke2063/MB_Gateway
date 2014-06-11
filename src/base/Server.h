@@ -28,11 +28,18 @@
 #include <stdint.h>
 #include <list>
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
-  #include <memory>
-  #include <thread>
-  using namespace std;
-#endif
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	#include <memory>
+	#include <thread>
+
+	#define SERVER_H_NS std
+
+#else
+	#include <boost/thread.hpp>
+	#include <boost/scoped_ptr.hpp>
+
+	#define SERVER_H_NS boost
+  #endif
 
 //MB_Framework
 #include <MBServer.h>
@@ -49,7 +56,7 @@ namespace MB_Gateway {
 
 class Server : public MBServer, public Logger{
 public:
-	Server(uint16_t port, shared_ptr<ThreadPool> ext_pool);
+	Server(uint16_t port, SERVER_H_NS::shared_ptr<ThreadPool> ext_pool);
 	virtual ~Server();
 
 private:
@@ -67,13 +74,18 @@ private:
 	 */
 	void connection_handler(void);
 
-	unique_ptr<thread> m_server_thread;
-	unique_ptr<thread> m_conn_handler_thread;
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	std::unique_ptr<std::thread> m_server_thread;
+	std::unique_ptr<std::thread> m_conn_handler_thread;
+#else
+	boost::scoped_ptr<boost::thread> m_server_thread;
+	boost::scoped_ptr<boost::thread> m_conn_handler_thread;
+#endif
 
 	bool m_server_running;
 	int m_server_socket;
 
-	shared_ptr<ThreadPool> pool;
+	SERVER_H_NS::shared_ptr<ThreadPool> pool;
 
 };
 

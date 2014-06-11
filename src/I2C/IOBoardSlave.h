@@ -10,9 +10,13 @@
 #ifndef IOBOARDSLAVE_H_
 #define IOBOARDSLAVE_H_
 
-#include <memory>
-using namespace std;
-
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	#include <memory>
+	#define IOBOARDSLAVE_H_NS std
+#else
+	#include <boost/shared_ptr.hpp>
+	#define IOBOARDSLAVE_H_NS boost
+#endif
 
 
 #include "I2C_IO_BOARD.git/base/inc/slave_eeprom_mapping.h"
@@ -68,8 +72,8 @@ public:
 	virtual uint8_t getType( void ){return SLAVE_TYPE_IOBOARD;}
 
 private:
-	shared_ptr<DataHandler> TmpData;
-	shared_ptr<DataHandler> PermData;
+	IOBOARDSLAVE_H_NS::shared_ptr<DataHandler> TmpData;
+	IOBOARDSLAVE_H_NS::shared_ptr<DataHandler> PermData;
 };
 
 } /* namespace I2C */

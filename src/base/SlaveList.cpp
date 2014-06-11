@@ -24,7 +24,12 @@
 #include "SlaveList.h"
 namespace icke2063 {
 namespace MB_Gateway {
-  
+
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	using namespace std;
+#else
+	using namespace boost;
+#endif
   
 SlaveList::SlaveList(){
   /* initialisation of lock object */
@@ -42,7 +47,7 @@ bool SlaveList::addSlave(shared_ptr<MBVirtualRTUSlave> newSlave) {
     index = curSlave->getSlaveAddr();
     lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
-    map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
+    std::map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
     if (it == m_slavelist.end()) {
 	    m_slavelist[index] = newSlave;
 	    return true;
@@ -55,7 +60,7 @@ shared_ptr<MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
 	shared_ptr<MBVirtualRTUSlave> result;
 	lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
-	map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
+	std::map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
 	if (it != m_slavelist.end()) {
 		result = it->second; //get reference
 		m_slavelist.erase(it); //remove from list
@@ -65,7 +70,7 @@ shared_ptr<MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
 
 shared_ptr<MBVirtualRTUSlave> SlaveList::getSlave(uint8_t index) {
     shared_ptr<MBVirtualRTUSlave> result;
-	map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
+	std::map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
 	if (it != m_slavelist.end()) {
 		return it->second; //get pointer
 	}

@@ -11,14 +11,6 @@
 #include <stddef.h>
 #include <string.h>
 
-
-//std lib
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
- 
-#else
-  #define nullptr NULL
-#endif
-
 #include <HandlerList.h>
 #include <I2CComm.h>
 
@@ -28,6 +20,15 @@
 #include "SingleRegisterHandler.h"
 #include "HolRegHandler.h"
 #include "HolRegHandlerRO.h"
+
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+#include <thread>
+#else
+#include <boost/thread/locks.hpp>
+#define nullptr NULL
+#endif
+
+using namespace IOBOARDSLAVE_H_NS;
 
 namespace icke2063 {
 namespace MB_Gateway {
@@ -175,10 +176,10 @@ bool IOBoard_Slave::init(void) {
 	shared_ptr<HolRegHandlerRO> HoldingRO;
 
 	lock_guard<mutex> lock(*(boost::serialization::singleton<HandlerList>::get_mutable_instance().m_handlerlist_lock.get()));
-	list<shared_ptr<MBHandlerInt> > *phandlerlist = &(boost::serialization::singleton<
+	std::list<shared_ptr<MBHandlerInt> > *phandlerlist = &(boost::serialization::singleton<
 			HandlerList>::get_mutable_instance().m_handlerlist);
 
-	list<shared_ptr<MBHandlerInt> >::iterator handler_it = phandlerlist->begin(); // get first handler
+	std::list<shared_ptr<MBHandlerInt> >::iterator handler_it = phandlerlist->begin(); // get first handler
 
 	while (handler_it != phandlerlist->end()) {
 	  shared_ptr<MBHandlerInt> listitem =*handler_it;

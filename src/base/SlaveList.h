@@ -24,9 +24,15 @@
 #ifndef SLAVELIST_H_
 #define SLAVELIST_H_
 
-//c++11
-#include <memory>
-using namespace std;
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	#include <memory>
+
+	#define SLAVELIST_H_NS std
+#else
+	#include <boost/shared_ptr.hpp>
+
+	#define SLAVELIST_H_NS boost
+#endif
 
 #include <MBSlaveList.h>
 #include <MBVirtualRTUSlave.h>
@@ -43,9 +49,9 @@ public:
 	SlaveList();
 	virtual ~SlaveList();
 
-	virtual bool addSlave(shared_ptr<MBVirtualRTUSlave> newSlave);
-	virtual shared_ptr<MBVirtualRTUSlave> removeSlave(uint8_t index);
-	virtual shared_ptr<MBVirtualRTUSlave> getSlave(uint8_t index);
+	virtual bool addSlave(SLAVELIST_H_NS::shared_ptr<MBVirtualRTUSlave> newSlave);
+	virtual SLAVELIST_H_NS::shared_ptr<MBVirtualRTUSlave> removeSlave(uint8_t index);
+	virtual SLAVELIST_H_NS::shared_ptr<MBVirtualRTUSlave> getSlave(uint8_t index);
 
 	//shared_ptr<Mutex> getLock();
 };

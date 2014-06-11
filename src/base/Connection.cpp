@@ -31,8 +31,13 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <string.h>
-#include <memory>
-using namespace std;
+
+
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	using namespace std;
+#else
+	using namespace boost;
+	#endif
 
 //boost
 #include <boost/serialization/singleton.hpp>
@@ -91,7 +96,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	function = query[offset];
 	address = (query[offset + 1] << 8) + query[offset + 2];
 	cur_address = address;
-	map<uint16_t,shared_ptr<MBHandlerInt> > *cur_handlerlist = NULL;
+	std::map<uint16_t,shared_ptr<MBHandlerInt> > *cur_handlerlist = NULL;
 
 	logger->debug("function[0x%x]", function);
 	/* get data count */
@@ -131,7 +136,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 
 		if (cur_handlerlist->size() > 0) {
 			/* get handlerfunction of current address */
-			map<uint16_t, shared_ptr<MBHandlerInt> >::iterator handler_it =
+			std::map<uint16_t, shared_ptr<MBHandlerInt> >::iterator handler_it =
 					cur_handlerlist->find(cur_address); //try to find slavehandlers
 			if (handler_it != cur_handlerlist->end()) {
 			  shared_ptr<MBHandlerInt> tmpHandler = handler_it->second;

@@ -11,13 +11,12 @@
 #define I2CCOMM_H_
 
 //std lib
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <mutex>
-  #include <thread>
-  using namespace std;
+#define I2CCOMM_H_NS std
 #else
-  #include <boost/thread.hpp>
-  using namespace boost;
+  #include <boost/thread/mutex.hpp>
+#define I2CCOMM_H_NS boost
   
 #endif
 
@@ -78,7 +77,7 @@ private:
 	void resetLivelist(void);
 	bool livelist[MAX_I2C_SLAVE_ADR]; //list of found I2C slaves
 
-	mutex i2cbus_lock; //lock for functor list
+	I2CCOMM_H_NS::mutex i2cbus_lock; //lock for functor list
 };
 
 } /* namespace I2C */

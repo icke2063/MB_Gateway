@@ -7,9 +7,8 @@
 
 <%pre>
 #include <stddef.h>
-
-#include <vector>
-using namespace std;
+#include <string>
+using std::string;
 
 #include "boost/serialization/singleton.hpp"
 
@@ -19,6 +18,16 @@ using namespace icke2063::MB_Gateway;
 
 #include <I2CComm.h>
 using namespace icke2063::MB_Gateway::I2C;
+
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+#include <memory>
+	using namespace std;
+#else
+#include <boost/shared_ptr.hpp>
+	using namespace boost;
+#endif
+
+
 </%pre>
 
 <%request scope="page">

@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <memory>
   using namespace std;
 #else
@@ -51,7 +51,7 @@ int main() {
 	pool->setLowWatermark(1);
 	
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
 	unique_ptr<Server> default_server(new Server(502,pool));
 #else
 	scoped_ptr<Server> default_server(new Server(502,pool));
@@ -60,7 +60,7 @@ int main() {
 
 	//	unique_ptr<Server> custom_server;
 #ifdef I2C_SUPPORT
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
 	unique_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
 #else
 	scoped_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner());
@@ -70,7 +70,7 @@ int main() {
 	sum->startFunctor();
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(sum);
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
 	unique_ptr<WebInterface> webint(new WebInterface());
 #else
 	scoped_ptr<WebInterface> webint(new WebInterface());

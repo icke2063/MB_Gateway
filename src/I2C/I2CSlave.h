@@ -10,8 +10,13 @@
 #ifndef I2CSLAVE_H_
 #define I2CSLAVE_H_
 
-#include <memory>
-using namespace std;
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	#include <memory>
+	#define I2CSLAVE_H_NS std
+#else
+	#include <boost/shared_ptr.hpp>
+	#define I2CSLAVE_H_NS boost
+#endif
 
 #include <VirtualRTUSlave.h>
 #include <MultiByteHandler.h>
@@ -68,7 +73,7 @@ public:
 	}
 
 protected:
-	shared_ptr<MultiByteHandler> Multi;
+	I2CSLAVE_H_NS::shared_ptr<MultiByteHandler> Multi;
 
 };
 

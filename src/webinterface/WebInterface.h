@@ -12,17 +12,14 @@
 
 
 //std lib
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <memory>
   #include <thread>
-  using namespace std;
+#define WEBINTERFACE_H_NS std
 #else
   #include <boost/shared_ptr.hpp>
   #include <boost/thread.hpp>
-  using namespace boost;
-#ifndef unique_ptr
-  #define unique_ptr scoped_ptr
-#endif
+#define WEBINTERFACE_H_NS boost
 #endif
 
 
@@ -43,9 +40,13 @@ public:
 
 private:
 	uint16_t m_port;
-	unique_ptr<tnt::Tntnet> server;
-
-	unique_ptr<thread> p_server_thread;
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	std::unique_ptr<tnt::Tntnet> server;
+	std::unique_ptr<std::thread> p_server_thread;
+#else
+	boost::scoped_ptr<tnt::Tntnet> server;
+	boost::scoped_ptr<boost::thread> p_server_thread;
+#endif
 	bool m_running;
 
 	virtual void thread_function (void);

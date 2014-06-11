@@ -24,11 +24,19 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
-  #include <memory>
-  #include <mutex>
-  using namespace std;
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+	#include <memory>
+	#include <thread>
+
+	#define CONNECTION_H_NS std
+#else
+	#include <boost/enable_shared_from_this.hpp>
+	#include <boost/shared_ptr.hpp>
+
+	#define CONNECTION_H_NS boost
 #endif
+
+
 
 #include <MBConnection.h>
 
@@ -50,19 +58,19 @@ using namespace icke2063::threadpool;
 namespace icke2063 {
 namespace MB_Gateway {
 
-class Connection: public MBConnection, public Logger, public enable_shared_from_this<Connection>{
+class Connection: public MBConnection, public Logger, public CONNECTION_H_NS::enable_shared_from_this<Connection>{
 
 	/**
 	 * Functor class for request handling by ThreadPool
 	 */
 	class ConnFunctor: public Functor{
 	public:
-		ConnFunctor(shared_ptr<Connection> conn):p_conn(conn){}
+		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):p_conn(conn){}
 		virtual ~ConnFunctor(){}
 
 	private:
 		virtual void functor_function(void);
-		shared_ptr<Connection> p_conn;
+		CONNECTION_H_NS::shared_ptr<Connection> p_conn;
 	};
 
 	friend class ConnFunctor;	//ok lets play together ;-)
@@ -97,7 +105,7 @@ private:
 	 * @param mode:			handle mode (read, write, check)
 	 * @return
 	 */
-	bool handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_slave, enum handleQuery_mode mode);
+	bool handleQuery(uint8_t* query, CONNECTION_H_NS::shared_ptr<VirtualRTUSlave> tmp_slave, enum handleQuery_mode mode);
 
 	/* connection information from libmodbus library */
 	modbus_t m_ctx;

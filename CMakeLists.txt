@@ -22,6 +22,10 @@ else()
   #use boost fallback
   FIND_PACKAGE(Boost COMPONENTS thread system serialization chrono REQUIRED)
   message(STATUS "use boost")
+  add_definitions( "-DICKE2063_THREADPOOL_NO_CPP11=1")
+  add_definitions("-DICKE2063_MBFRAMEWORK_NO_CPP11=1")
+  add_definitions("-DICKE2063_CRUMBY_NO_CPP11=1")
+
 endif()
 
 

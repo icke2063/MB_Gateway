@@ -28,7 +28,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <mutex>
   using namespace std;
 #else

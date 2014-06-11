@@ -17,6 +17,12 @@
 #include <HandlerList.h>
 #include <SlaveList.h>
 
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+using namespace std;
+#else
+using namespace boost;
+#endif
+
 namespace icke2063 {
 namespace MB_Gateway {
 

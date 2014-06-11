@@ -11,12 +11,21 @@
 #define SUMMERYSLAVE_H_
 
 //std lib
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (__cplusplus >= 201103L)
+#ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <memory>
   #include <thread>
   #include <condition_variable>
   #include <mutex>
-  using namespace std;
+
+#define SUMMERYSLAVE_H_NS std
+#else
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
+
+
+#define SUMMERYSLAVE_H_NS boost
 #endif
 
 
@@ -41,24 +50,22 @@ using namespace icke2063::threadpool;
 namespace icke2063 {
 namespace MB_Gateway {
 
-class SummerySlave: public VirtualRTUSlave, public Logger, public enable_shared_from_this<SummerySlave> {
+class SummerySlave: public VirtualRTUSlave, public Logger, public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlave> {
   
-  class SummerySlaveFunctor: public Functor,public enable_shared_from_this<SummerySlaveFunctor>{
+  class SummerySlaveFunctor: public Functor,public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlaveFunctor>{
   public:
-    SummerySlaveFunctor(shared_ptr<SummerySlave> slave):m_slave(slave){
-    	printf("SummerySlaveFunctor\n");
-    }
+    SummerySlaveFunctor(SUMMERYSLAVE_H_NS::shared_ptr<SummerySlave> slave):m_slave(slave){}
     virtual ~SummerySlaveFunctor(){}
 
     virtual void functor_function(void);
   private:
-    shared_ptr<SummerySlave> m_slave;
+    SUMMERYSLAVE_H_NS::shared_ptr<SummerySlave> m_slave;
   };
   
   friend class SummerySlaveFunctor;
   
 public:
-	SummerySlave(shared_ptr<ThreadPool> delayed_pool, uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
+	SummerySlave(SUMMERYSLAVE_H_NS::shared_ptr<ThreadPool> delayed_pool, uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
 	virtual ~SummerySlave();
 	virtual uint8_t getType( void ){return SLAVE_TYPE_SUMMERY;}
 	void startFunctor(void);
@@ -69,10 +76,10 @@ private:
 	//unique_ptr<thread> p_scanner_thread;
 	bool m_running;
 	
-	condition_variable m_Condition;  // Condition variable for timed_wait
-	mutex m_Mutex;                   // Mutex
+	SUMMERYSLAVE_H_NS::condition_variable m_Condition;  // Condition variable for timed_wait
+	SUMMERYSLAVE_H_NS::mutex m_Mutex;                   // Mutex
 	unsigned int m_timeout;
-	shared_ptr<ThreadPool> m_delayed_pool;
+	SUMMERYSLAVE_H_NS::shared_ptr<ThreadPool> m_delayed_pool;
 };
 
 } /* namespace MB_Gateway */
