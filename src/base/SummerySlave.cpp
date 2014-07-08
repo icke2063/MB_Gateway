@@ -57,7 +57,7 @@ if(m_delayed_pool.get()){
     logger->info("addFunctor\n");
   struct timeval now;
   gettimeofday(&now,NULL);
-  m_delayed_pool->addDelayedFunctor(new SummerySlaveFunctor(shared_from_this()), &now);
+  m_delayed_pool->delegateDelayedFunctor( shared_ptr<DelayedFunctorInt>( new DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
 
 }
   
@@ -67,7 +67,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 	uint8_t slave;
 
 	if(!m_slave.get()){
-	  printf("SummerySlave::SummerySlaveFunctor::functor_function: m_slave failure\n");
+		printf("SummerySlave::SummerySlaveFunctor::functor_function: m_slave failure\n");
 	  return;
 	}
 	
@@ -116,7 +116,10 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 		  struct timeval now;
 		  gettimeofday(&now,NULL);
 		  now.tv_usec += 100;
-		 m_slave->m_delayed_pool->addDelayedFunctor(new SummerySlaveFunctor(m_slave),&now);
+
+		 m_slave->m_delayed_pool->delegateDelayedFunctor(shared_ptr<DelayedFunctorInt>(new DelayedFunctor(new SummerySlaveFunctor(m_slave), &now)));
+
+
 	}
 }
 

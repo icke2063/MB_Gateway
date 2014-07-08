@@ -9,6 +9,13 @@
 
 #include "I2C-Comm/I2CComm.h"
 
+using namespace I2CCOMM_H_NS;
+
+#ifndef ICKE2063_CRUMBY_NO_CPP11
+#else
+  #include <boost/thread/locks.hpp>
+#endif
+
 #include <stdio.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>

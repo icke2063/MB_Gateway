@@ -40,7 +40,7 @@ include_directories(
 	${common_cpp_INC}
 )
 
-add_subdirectory (MB_Framework)
+add_subdirectory(MB_Framework)
 
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})

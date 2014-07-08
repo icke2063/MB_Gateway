@@ -136,8 +136,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 
 		if (cur_handlerlist->size() > 0) {
 			/* get handlerfunction of current address */
-			std::map<uint16_t, shared_ptr<MBHandlerInt> >::iterator handler_it =
-					cur_handlerlist->find(cur_address); //try to find slavehandlers
+			m_handlerlist_type::iterator handler_it =	cur_handlerlist->find(cur_address); //try to find slavehandlers
 			if (handler_it != cur_handlerlist->end()) {
 			  shared_ptr<MBHandlerInt> tmpHandler = handler_it->second;
 				logger->debug("found handler");
@@ -148,9 +147,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 				case handleReadAccess:
 					logger->debug("handleReadAccess[0x%x]", cur_address);
 					//call handleReadAccess function
-					if ((handler_retval =
-							tmpHandler.get()->handleReadAccess(param))
-							> 0) {
+					if ((handler_retval = tmpHandler.get()->handleReadAccess(param)) > 0) {
 						logger->debug("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
 						register_done += handler_retval;
@@ -166,9 +163,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 				case checkWriteAccess:
 					logger->debug("checkWriteAccess[0x%x]", cur_address);
 					//call handleReadAccess function
-					if ((handler_retval =
-							(*handler_it).second->checkWriteAccess(param))
-							> 0) {
+					if ((handler_retval = (*handler_it).second->checkWriteAccess(param)) > 0) {
 						logger->debug("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
 						register_done += handler_retval;
@@ -183,9 +178,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 				case handleWriteAccess:
 					logger->debug("handleWriteAccess[0x%x]", cur_address);
 					//call handleReadAccess function
-					if ((handler_retval =
-							(*handler_it).second->handleWriteAccess(param))
-							> 0) {
+					if ((handler_retval = (*handler_it).second->handleWriteAccess(param)) > 0) {
 						logger->debug("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
 						register_done += handler_retval;
@@ -254,8 +247,7 @@ void Connection::ConnFunctor::functor_function(void) {
 			//std::lock_guard<std::mutex> lock(*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex().get()));
 
 			shared_ptr<VirtualRTUSlave> tmp_slave =
-					dynamic_pointer_cast<VirtualRTUSlave>(boost::serialization::singleton<
-							SlaveList>::get_mutable_instance().getSlave(slave));
+					dynamic_pointer_cast<VirtualRTUSlave>(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave));
 			p_conn->logger->debug("slave[0x%x]:0x%x", slave, tmp_slave.get());
 
 

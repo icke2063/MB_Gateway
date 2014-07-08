@@ -48,8 +48,6 @@
 
 #include "Connection.h"
 
-#include <DummyFunctor.h>
-
 namespace icke2063 {
 namespace MB_Gateway {
 
@@ -240,8 +238,11 @@ void Server::connection_handler (void){
 					curConn -> setStatus(MBConnection::busy);
 					logger->debug("drin\n");
 					//use threadpool
-					if(!pool->addFunctor(curConn->getFunctor())){
+					FunctorInt *tmpFunctor = NULL;
+					if( ((tmpFunctor = pool->delegateFunctor(curConn->getFunctor()))) != NULL  ){
 					  logger->error("Functor not added\n");
+					  delete tmpFunctor;
+					  curConn -> setStatus(MBConnection::open);
 					}
 				}
 				++conn_it;

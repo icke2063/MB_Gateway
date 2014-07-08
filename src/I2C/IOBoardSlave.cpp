@@ -315,8 +315,7 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	 * get some informations directly from ioboard
 	 */
 
-	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen(
-			"/dev/i2c-1");
+	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1");
 
 	/* get SlaveID */
 	recvbuffer[0] = 0; //first high
@@ -370,7 +369,7 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	i2c_address = ((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START));
 	recvbuffer[0] = ( i2c_address >> 8); //first high
 	recvbuffer[1] = ( i2c_address & 0xff); //second low
-	logger->debug("function:0x%x", i2c_address);
+	logger->debug("read function codes[0x%x]", i2c_address);
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, pincount * 2)) {
@@ -382,27 +381,29 @@ void IOBoard_Slave::getSlaveInfo(void) {
 			}
 		}
 	} else {
+		logger->debug("IOBoard[0x%x] unable read func codes", getSlaveAddr());
 		logger->error("IOBoard[0x%x] unable read func codes", getSlaveAddr());
 	}
 
 	/* get virtual pin names */
 	for (i = 0; i < pincount; i++) {
-		i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
-				+ (i * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+		i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START) + (i * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
 		// get virtual pin names
 		recvbuffer[0] = (i2c_address >> 8); //first high
 		recvbuffer[1] = (i2c_address & 0xff); //second low
 		logger->debug("name[%i]:0x%x", i, i2c_address);
 		// read data from i2c bus
 		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
-				getSlaveAddr(), recvbuffer, _16bit,
-				IO_BOARD_MAX_IO_PIN_NAME_LENGTH)) {
+				getSlaveAddr(), recvbuffer, _16bit, IO_BOARD_MAX_IO_PIN_NAME_LENGTH)) {
 			recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0';
 
 			if(m_mapping){
 				memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,IO_BOARD_MAX_IO_PIN_NAME_LENGTH);	//store in DB
 				logger->info("name[%i]:%s", i, recvbuffer);
 			}
+		} else {
+			logger->debug("IOBoard[0x%x] unable read names", getSlaveAddr());
+			logger->error("IOBoard[0x%x] unable read names", getSlaveAddr());
 		}//if(I2C)
 	}//for(names)
 }

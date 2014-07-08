@@ -35,14 +35,13 @@
 using namespace icke2063::MB_Framework;
 
 #include <ThreadPool.h>
-#include <DummyFunctor.h>
+
 
 #ifdef I2C_SUPPORT
 	#include <I2CScanner.h>
 #endif
 
 using namespace icke2063::MB_Gateway;
-
 
 int main() {
 
