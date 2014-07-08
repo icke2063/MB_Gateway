@@ -41,8 +41,7 @@
 #include <MBConnection.h>
 
 // libmodbus
-#include "modbus-private.h"
-#include "modbus.h"
+#include "modbus/modbus.h"
 
 //MB_Framework
 #include <VirtualRTUSlave.h>
@@ -84,7 +83,7 @@ class Connection: public MBConnection, public Logger, public CONNECTION_H_NS::en
 public:
 	Connection(modbus_t *ctx);
 	virtual ~Connection();
-	modbus_t *getConnInfo (void){return &m_ctx;}
+	modbus_t *getConnInfo (void){return p_ctx;}
 	
 	/**
 	 * Threadpool functor creator
@@ -108,7 +107,7 @@ private:
 	bool handleQuery(uint8_t* query, CONNECTION_H_NS::shared_ptr<VirtualRTUSlave> tmp_slave, enum handleQuery_mode mode);
 
 	/* connection information from libmodbus library */
-	modbus_t m_ctx;
+	modbus_t *p_ctx;
 };
 } /* namespace MB_Gateway */
 } /* namespace icke2063 */

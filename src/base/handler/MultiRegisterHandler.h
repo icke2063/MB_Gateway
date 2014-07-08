@@ -12,7 +12,7 @@
 
 #include "DefaultHandler.h"
 
-#include "modbus.h"
+#include "modbus/modbus.h"
 
 namespace icke2063 {
 namespace MB_Gateway {

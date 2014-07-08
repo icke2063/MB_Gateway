@@ -13,7 +13,7 @@
 #include "stddef.h"
 #include <MBVirtualRTUSlave.h>
 
-#include <modbus-private.h>
+#include <modbus/modbus.h>
 
 using namespace icke2063::MB_Framework;
 

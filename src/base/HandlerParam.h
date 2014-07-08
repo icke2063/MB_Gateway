@@ -11,7 +11,6 @@
 #define HANDLERPARAM_H_
 
 //libmodbus
-#include <modbus-private.h>
 
 #include <MBHandlerInt.h>
 

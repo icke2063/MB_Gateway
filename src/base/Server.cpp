@@ -43,8 +43,8 @@
 
 
 // libmodbus
-#include "modbus.h"
-#include "modbus-private.h"
+#include "modbus/modbus.h"
+
 
 #include "Connection.h"
 
@@ -151,7 +151,7 @@ void Server::waitForConnection(void){
 		std::cout << "before modbus accept" << std::endl;
 		if (modbus_tcp_accept(ctx_tmp, &m_server_socket) != -1) {
 
-			logger->debug("modbus_tcp_accept:%i",ctx_tmp->s);
+			logger->debug("modbus_tcp_accept:%i",modbus_get_socket(ctx_tmp));
 
 			if(m_conn_lock.get() != NULL){
 				lock_guard<mutex> lock(*m_conn_lock.get());
@@ -199,8 +199,8 @@ void Server::connection_handler (void){
 				curConn =  dynamic_pointer_cast<Connection> (tmpConn);
 
 				if(curConn.get() && curConn->getStatus() == MBConnection::open){//add open connection into set
-					FD_SET(curConn->getConnInfo()->s, &rfds);
-					if(maxFD < curConn->getConnInfo()->s)maxFD = curConn->getConnInfo()->s;
+					FD_SET(modbus_get_socket(curConn->getConnInfo()), &rfds);
+					if(maxFD < modbus_get_socket(curConn->getConnInfo()))maxFD = modbus_get_socket(curConn->getConnInfo());
 				}
 
 				if(curConn->getStatus() == MBConnection::closed){//remove closed connection
@@ -236,7 +236,7 @@ void Server::connection_handler (void){
 			while(conn_it != openConnections.end()){//loop over all connections
 				curConn =  dynamic_pointer_cast<Connection>(*conn_it);
 				if(curConn.get())logger->debug("found connection\n");
-				if(curConn.get() && FD_ISSET(curConn->getConnInfo()->s, &rfds)){//add open connection into set
+				if(curConn.get() && FD_ISSET(modbus_get_socket( curConn->getConnInfo() ), &rfds)){//add open connection into set
 					curConn -> setStatus(MBConnection::busy);
 					logger->debug("drin\n");
 					//use threadpool

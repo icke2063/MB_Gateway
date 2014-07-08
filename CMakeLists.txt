@@ -31,10 +31,6 @@ endif()
 
 include_directories(/usr/include)
 
-#libmodbus git subdirectory
-include_directories(libmodbus)
-include_directories(libmodbus/src)
-
 add_subdirectory (common_cpp)
 
 #default includes

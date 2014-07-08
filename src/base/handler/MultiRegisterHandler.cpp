@@ -9,8 +9,9 @@
 
 #include "handler/MultiRegisterHandler.h"
 #include <HandlerParam.h>
-#include "modbus-private.h"
 #include <string.h>
+
+#include <mb_common.h>
 
 namespace icke2063 {
 namespace MB_Gateway {

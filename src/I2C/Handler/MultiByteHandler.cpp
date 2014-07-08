@@ -15,6 +15,8 @@
 #include <string.h>
 #include <Convert.h>
 
+#include <mb_common.h>
+
 namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {

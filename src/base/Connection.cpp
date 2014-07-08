@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include <mb_common.h>
 
 #ifndef ICKE2063_CRUMBY_NO_CPP11
 	using namespace std;
@@ -41,8 +42,6 @@
 
 //boost
 #include <boost/serialization/singleton.hpp>
-
-#include <modbus-tcp.h>
 
 #include <SlaveList.h>
 #include <MBHandlerInt.h>
@@ -62,7 +61,7 @@ Connection::Connection(modbus_t *ctx) :
 
 	/* validate connection information and enable functor_function */
 	if (ctx != NULL) {
-		m_ctx = *ctx;
+		p_ctx = ctx;
 		m_connection_running = true;
 	}
 }
@@ -72,7 +71,7 @@ Connection::~Connection() {
 	/* Connection closed by the client or error */
 	m_connection_running = false;
 	if(m_connection_running){
-		modbus_close(&m_ctx);
+		modbus_close(p_ctx);
 	}
 }
 
@@ -91,7 +90,8 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	uint16_t handler_retval;
 
 	/* get needed informatons */
-	offset = m_ctx.backend->header_length;
+	offset = modbus_get_header_length(p_ctx);
+
 	slave = query[offset - 1];
 	function = query[offset];
 	address = (query[offset + 1] << 8) + query[offset + 2];
@@ -242,7 +242,8 @@ void Connection::ConnFunctor::functor_function(void) {
 
 	if (rc != -1) {
 
-		offset = p_ctx->backend->header_length;
+		offset = modbus_get_header_length(p_ctx);
+
 		slave = query[offset - 1];				//get slaveID
 		function = query[offset];				//get mb function code
 
@@ -268,14 +269,11 @@ void Connection::ConnFunctor::functor_function(void) {
 					 * -> handle ReadAccess by handleQuery
 					 */
 					if (p_conn->handleQuery(query, tmp_slave, handleReadAccess)) {
-						rc = modbus_reply(p_ctx, query, rc,
-								tmp_slave->getMappingDB());
-						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", p_ctx->s,
-								tmp_slave->getMappingDB(),
-								rc);
+						rc = modbus_reply(p_ctx, query, rc,	tmp_slave->getMappingDB());
+						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", modbus_get_socket(p_ctx),
+								tmp_slave->getMappingDB(), rc);
 					} else {
-						modbus_reply_exception(p_ctx, query,
-								MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+						modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 					}
 					break;
 				case _FC_WRITE_MULTIPLE_REGISTERS:
@@ -288,13 +286,11 @@ void Connection::ConnFunctor::functor_function(void) {
 					 */
 					if (p_conn->handleQuery(query, tmp_slave, checkWriteAccess)) {
 						rc = modbus_reply(p_ctx, query, rc,tmp_slave->getMappingDB());
-						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", p_ctx->s,
-								tmp_slave->getMappingDB(),
-								rc);
+						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", modbus_get_socket(p_ctx),
+								tmp_slave->getMappingDB(), rc);
 						p_conn->handleQuery(query, tmp_slave, handleWriteAccess);
 					} else {
-						modbus_reply_exception(p_ctx, query,
-								MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+						modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 					}
 					break;
 					/* unsupported FC */
@@ -306,14 +302,12 @@ void Connection::ConnFunctor::functor_function(void) {
 				case _FC_REPORT_SLAVE_ID:
 				case _FC_WRITE_AND_READ_REGISTERS:
 				default:
-					modbus_reply_exception(p_ctx, query,
-							MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+					modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
 					break;
 				}
 			} else {
 				p_conn->logger->error("slave not registred: modbus_reply_exception");
-				modbus_reply_exception(p_ctx, query,
-						MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+				modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 
 			}
 		}

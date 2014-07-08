@@ -14,7 +14,7 @@
 using namespace icke2063::MB_Framework;
 
 #include <Logger.h>
-#include "modbus.h"
+#include "modbus/modbus.h"
 
 namespace icke2063 {
 namespace MB_Gateway {
