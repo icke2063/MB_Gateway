@@ -29,8 +29,8 @@ namespace MB_Gateway {
 SummerySlave::SummerySlave(shared_ptr<ThreadPool> delayed_pool, uint8_t SlaveAddr, unsigned int timeout) :
 		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true), m_timeout(timeout),m_delayed_pool(delayed_pool){
 	logger = &log4cpp::Category::getInstance(std::string("SummerySlave"));
-	logger->setPriority(log4cpp::Priority::DEBUG);
-	if (console)logger->addAppender(console);
+	logger->setPriority(log4cpp::Priority::ERROR);
+	//if (console)logger->addAppender(console);
 
 	logger->info("SummerySlave@%i",SlaveAddr);
 	logger->debug("m_timeout: %d",m_timeout);

@@ -30,7 +30,7 @@ using namespace boost;
 
 //IO_Board
 #include "I2C_IO_BOARD.git/base/inc/slave_eeprom_mapping.h"
-#include "I2C_IO_BOARD.git/common_AVR/include/IO_handling.h"
+#include "I2C_IO_BOARD.git/common_AVR/include/function_codes.h"
 </%pre>
 
 <####################################################################################>
@@ -93,7 +93,7 @@ std::string button = "";	// button value to
 <tr><td>IO_BOARD_MAX_IO_PIN_NAME_LENGTH</td><td><$ IO_BOARD_MAX_IO_PIN_NAME_LENGTH $></td><td>EEPROM-Length</td></tr>
 
 </table>
-%}
+%}//if info
 </%cpp>
 <%cpp>
 shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
@@ -413,12 +413,26 @@ int write_enable = 0;
 	<option value="<$ func_code == PIN_PULSE?(255<<8):(uint16_t)((pinNr<<8) | PIN_PULSE) $>" <$ func_code == PIN_PULSE?"selected":"" $>>pulse</option>
 </select>
 %}else{
-<$ func_code == PIN_DISABLED?"disabled":"" $>
-<$ func_code == PIN_INPUT?"input":"" $>
-<$ func_code == PIN_SWITCH?"switch":"" $>
-<$ func_code == PIN_TOGGLE?"toggle":"" $>
-<$ func_code == PIN_PULSE?"pulse":"" $>
-
+%	switch(func_code){
+%		case PIN_DISABLED:
+			<$ "disabled" $>
+%			break;
+%		case PIN_INPUT:
+			<$ "input" $>
+%			break;
+%		case PIN_SWITCH:
+			<$ "switch" $>
+%			break;
+%		case PIN_TOGGLE:
+			<$ "toggle" $>
+%			break;
+%		case PIN_PULSE:
+			<$ "pulse" $>
+%			break;
+%		default:
+			<$ "unknown" $>
+%			break;
+%	}
 %} 
 </%def>
 
