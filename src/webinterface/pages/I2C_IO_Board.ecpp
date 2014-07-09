@@ -52,11 +52,11 @@ std::string messages("");
 <############################################>
 <%def form_i2c_io_board>
 <%args>
-int SlaveNr = 0;	// slave number: slot on which virtual RTU slave can be addressed
+int SlaveNr = 0;							// slave number: slot on which virtual RTU slave can be addressed
 std::string request_table_io_board_viopin;	// marker for post data
-int debug = 0;	// debug flag
-int info = 0;	// info flag
-std::string button = "";	// button value to 
+int debug = 0;								// debug flag
+int info = 0;								// info flag
+std::string button = "";					// button value to 
 </%args>
 <div id="ioboard_form">
 	<h1>I2C IO Board</h1>
@@ -131,7 +131,7 @@ if( p_slave != NULL ){
 		}
 	}
 	
-	//pin function codes
+	//get pin function codes from internal DB (init on found IO Slave)
 	for(pin=0;pin<vio_count;pin++){
 		//get pin function code
 		i2c_address = (I2C_BUFFER_SIZE + EEPROM_FUNC_START + (pin * 2));
@@ -325,9 +325,13 @@ Slave not found
 </%def>
 
 
-<################################>
-<# handle function select		#>
-<################################>
+<################################################################>
+<# handle virtual pin function select							#>
+<# - Each virtual pin has its own option						#>
+<#   -> all selected values are stored within vio_func array	#>
+<#   -> this function loops over all entries					#>
+<#	    and write values to slave								#>
+<################################################################>
 <%def handle_func_select>
 <%args>
 std::string request_table_io_board_viopin = "";
@@ -436,9 +440,12 @@ int write_enable = 0;
 %} 
 </%def>
 
-<################################>
-<# handle eeprom pin action		#>
-<################################>
+<########################################>
+<# handle request pin action			#>
+<# some vitual pins can do some action	#>
+<# this function activates this action	#>
+<# on slave device						#>
+<########################################>
 <%def handle_request_pin_action>
 <%args>
 std::string request_table_io_board_viopin = "";
@@ -459,10 +466,11 @@ if(request_table_io_board_viopin != ""){
 	}
 	
 	/* 
-	* init temporary port values
+	* init temporary port values  !!! all virtual pins !!!
+	* - all switch pin masks bit have to be activated
 	* - switch -> set switch off -> if checkbox marked switch on again
 	*/
-	for(std::map<uint8_t,uint8_t>::iterator func_it = pin_function.begin();func_it != pin_function.end();++func_it){
+	for(std::map<uint8_t,uint8_t>::iterator func_it = pin_function.begin();func_it != pin_function.end();++func_it){//loop over all pins
 	
 		if((func_it->first/8) < vio_port_count){
 			switch(func_it->second){
@@ -481,21 +489,24 @@ if(request_table_io_board_viopin != ""){
 		}
 	}
 			
+	/*
+	* set requested actions !!! only set checkbox pins !!!
+	*/
 	for(viopin_type::const_iterator it = viopin.begin();it != viopin.end();++it){
-		cur_port_num = (((uint16_t)*it) & 0xff)/8;
-		cur_pin = (((uint16_t)*it) & 0xff)%8;
-		cur_func = ((uint16_t)*it)>>8;
+		cur_port_num = (((uint16_t)*it) & 0xff)/8;	//virtual pin coded in lower byte of checkbox value -> calc port num
+		cur_pin = (((uint16_t)*it) & 0xff)%8;		//same comment as before -> calc pin num
+		cur_func = ((uint16_t)*it)>>8;				//function code coded in upper byte of checkbox value
 	
 	
 		switch(cur_func){
+			case PIN_TOGGLE:
+			case PIN_SWITCH:
 			case PIN_PULSE:
 				if( cur_port_num < vio_port_count){
-					cur_port[cur_port_num] |= (1<< cur_pin)<<8 | (1<< cur_pin);
+					cur_port[cur_port_num] |= (1<< cur_pin)<<8 | (1<< cur_pin);	//set mask && pin
 				}
 				break;
 			case PIN_INPUT:
-			case PIN_SWITCH:
-			case PIN_TOGGLE:
 			case PIN_DISABLED:
 			default:
 				break;
@@ -548,9 +559,9 @@ int vio_port = 0;
 </%cpp>
 </%def>
 
-<########################>
-<# elem: style_by_pin_status		#>
-<########################>
+<################################>
+<# elem: style_by_pin_status	#>
+<################################>
 <%def style_by_pin_status>
 <%args>
 int pin = 0;
