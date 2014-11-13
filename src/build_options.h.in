@@ -24,6 +24,8 @@
  #ifndef _BUILD_OPTIONS_H_
  #define _BUILD_OPTIONS_H_
 
+ #cmakedefine ICKE2063_CRUMBY_NO_CPP11
+
  #cmakedefine I2C_SUPPORT
    
  #endif  /* _BUILD_OPTIONS_H_ */

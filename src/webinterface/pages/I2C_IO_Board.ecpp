@@ -31,6 +31,8 @@ using namespace boost;
 //IO_Board
 #include "I2C_IO_BOARD.git/base/inc/slave_eeprom_mapping.h"
 #include "I2C_IO_BOARD.git/common_AVR/include/function_codes.h"
+#include "I2C_IO_BOARD.git/common_AVR/include/IO_handling.h"
+
 </%pre>
 
 <####################################################################################>
@@ -96,7 +98,7 @@ std::string button = "";					// button value to
 %}//if info
 </%cpp>
 <%cpp>
-shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 if( p_slave != NULL ){
 
 	shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
@@ -372,7 +374,7 @@ if(request_table_io_board_viopin != ""){
 			if (i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, 2, 2)) {
 		
 		
-				shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+				shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 				if( p_slave.get() != NULL ){
 					shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 					if(p_io_board != NULL){

@@ -21,7 +21,7 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-int MultiByteHandler::handleReadAccess(MBHandlerParam *param) {
+int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 	uint16_t address;
 	uint16_t i2c_address;
 	uint16_t byte_count;
@@ -114,14 +114,14 @@ int MultiByteHandler::handleReadAccess(MBHandlerParam *param) {
 		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 				curHandler->m_slave, recvbuffer, m_mode, byte_count)) {
 
-			Convert converter;
+			icke2063::common_cpp::Convert converter;
 			//copy data to mb_mapping
 			switch (curHandler->m_function) {
 			case _FC_READ_INPUT_REGISTERS: //FC 03:read holding register
 			{
 				converter.BigEndiantoShort(
 						&curHandler->p_mb_mapping->tab_input_registers[address],
-						recvbuffer, (size_t) curHandler->m_count);
+						(uint16_t*)recvbuffer, (size_t) curHandler->m_count);
 //				int i;
 //				for(i=0;i<byte_count;i++){
 //					logger->debug("recv[%i]:0x%x",i,recvbuffer[i]);
@@ -132,7 +132,7 @@ int MultiByteHandler::handleReadAccess(MBHandlerParam *param) {
 			{
 				converter.BigEndiantoShort(
 						&curHandler->p_mb_mapping->tab_registers[address],
-						recvbuffer, (size_t) curHandler->m_count);
+						(uint16_t*)recvbuffer, (size_t) curHandler->m_count);
 //				int i;
 //				for(i=0;i<byte_count;i++){
 //					logger->debug("recv[%i]:0x%x",i,recvbuffer[i]);
@@ -150,7 +150,7 @@ int MultiByteHandler::handleReadAccess(MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 
-int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
+int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 	uint8_t slave;
 	uint16_t address;
 	uint16_t i2c_address;
@@ -235,8 +235,8 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 			return 0;
 		}
 
-		Convert converter;
-		converter.ShorttoBigEndian(&sendbuffer[send_offset],
+		icke2063::common_cpp::Convert converter;
+		converter.ShorttoBigEndian((uint16_t*)&sendbuffer[send_offset],
 				&curHandler->p_mb_mapping->tab_registers[address],
 				(size_t) curHandler->m_count);
 
@@ -254,7 +254,7 @@ int MultiByteHandler::handleWriteAccess(MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 
-int MultiByteHandler::checkWriteAccess(MBHandlerParam *param) {
+int MultiByteHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 	uint16_t byte_count;
 
 	logger->debug("MultiByteHandler::checkWriteAccess");

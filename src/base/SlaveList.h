@@ -24,6 +24,8 @@
 #ifndef SLAVELIST_H_
 #define SLAVELIST_H_
 
+#include <build_options.h>
+
 #ifndef ICKE2063_CRUMBY_NO_CPP11
 	#include <memory>
 
@@ -37,8 +39,6 @@
 #include <MBSlaveList.h>
 #include <MBVirtualRTUSlave.h>
 
-using namespace icke2063::MB_Framework;
-
 #include <ThreadPool.h>
 
 namespace icke2063 {
@@ -49,9 +49,9 @@ public:
 	SlaveList();
 	virtual ~SlaveList();
 
-	virtual bool addSlave(SLAVELIST_H_NS::shared_ptr<MBVirtualRTUSlave> newSlave);
-	virtual SLAVELIST_H_NS::shared_ptr<MBVirtualRTUSlave> removeSlave(uint8_t index);
-	virtual SLAVELIST_H_NS::shared_ptr<MBVirtualRTUSlave> getSlave(uint8_t index);
+	virtual bool addSlave(SLAVELIST_H_NS::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> newSlave);
+	virtual SLAVELIST_H_NS::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> removeSlave(uint8_t index);
+	virtual SLAVELIST_H_NS::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> getSlave(uint8_t index);
 
 	//shared_ptr<Mutex> getLock();
 };

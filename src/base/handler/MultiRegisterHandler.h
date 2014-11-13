@@ -25,9 +25,9 @@ public:
 	}
 	virtual ~MultiRegisterHandler(){}
 
-	virtual int handleReadAccess(MBHandlerParam *param);
-	virtual int checkWriteAccess(MBHandlerParam *param);
-	virtual int handleWriteAccess(MBHandlerParam *param);
+	virtual int handleReadAccess(icke2063::MB_Framework::MBHandlerParam *param);
+	virtual int checkWriteAccess(icke2063::MB_Framework::MBHandlerParam *param);
+	virtual int handleWriteAccess(icke2063::MB_Framework::MBHandlerParam *param);
 
 private:
 	modbus_mapping_t *p_mb_mapping;

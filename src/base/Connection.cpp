@@ -31,6 +31,7 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <string.h>
+#include <exception>
 
 #include <mb_common.h>
 
@@ -57,12 +58,13 @@ Connection::Connection(modbus_t *ctx) :
 	logger->setPriority(log4cpp::Priority::DEBUG);
 	if (console)logger->addAppender(console);
 
-	logger->info("Connection\n");
-
 	/* validate connection information and enable functor_function */
 	if (ctx != NULL) {
+		logger->info("Connection[%d]\n",modbus_get_socket(ctx));
 		p_ctx = ctx;
 		m_connection_running = true;
+	} else {
+		throw std::runtime_error("invalid handle");
 	}
 }
 
@@ -97,7 +99,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	function = query[offset];
 	address = (query[offset + 1] << 8) + query[offset + 2];
 	cur_address = address;
-	std::map<uint16_t,shared_ptr<MBHandlerInt> > *cur_handlerlist = NULL;
+	std::map<uint16_t,shared_ptr<MB_Framework::MBHandlerInt> > *cur_handlerlist = NULL;
 
 	logger->debug("function[0x%x]", function);
 	/* get data count */
@@ -137,9 +139,9 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 
 		if (cur_handlerlist->size() > 0) {
 			/* get handlerfunction of current address */
-			m_handlerlist_type::iterator handler_it =	cur_handlerlist->find(cur_address); //try to find slavehandlers
+			MB_Framework::m_handlerlist_type::iterator handler_it =	cur_handlerlist->find(cur_address); //try to find slavehandlers
 			if (handler_it != cur_handlerlist->end()) {
-			  shared_ptr<MBHandlerInt> tmpHandler = handler_it->second;
+			  shared_ptr<MB_Framework::MBHandlerInt> tmpHandler = handler_it->second;
 				logger->debug("found handler");
 				HandlerParam * param = new HandlerParam(slave, function,
 						cur_address, count - register_done,
@@ -264,7 +266,7 @@ void Connection::ConnFunctor::functor_function(void) {
 					 */
 					if (p_conn->handleQuery(query, tmp_slave, handleReadAccess)) {
 						rc = modbus_reply(p_ctx, query, rc,	tmp_slave->getMappingDB());
-						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", modbus_get_socket(p_ctx),
+						p_conn->logger->debug("modbus_reply[%d;0x%x]:%d", modbus_get_socket(p_ctx),
 								tmp_slave->getMappingDB(), rc);
 					} else {
 						modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);

@@ -15,7 +15,8 @@
 namespace icke2063 {
 namespace MB_Gateway {
 
-class SRegisterHandler: public MultiRegisterHandler {
+class SRegisterHandler:
+	public MultiRegisterHandler {
 public:
 	SRegisterHandler(modbus_mapping_t * pmap = NULL):MultiRegisterHandler(pmap,1){}
 	virtual ~SRegisterHandler(){}

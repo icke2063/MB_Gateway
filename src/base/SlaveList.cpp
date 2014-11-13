@@ -37,8 +37,8 @@ SlaveList::SlaveList(){
 }
 SlaveList::~SlaveList(){}  
   
-bool SlaveList::addSlave(shared_ptr<MBVirtualRTUSlave> newSlave) {
-    shared_ptr<MBVirtualRTUSlave> curSlave = dynamic_pointer_cast<MBVirtualRTUSlave>(newSlave);
+bool SlaveList::addSlave(shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> newSlave) {
+    shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> curSlave = dynamic_pointer_cast<icke2063::MB_Framework::MBVirtualRTUSlave>(newSlave);
     uint8_t index;
 
     if(!curSlave.get()){
@@ -47,7 +47,7 @@ bool SlaveList::addSlave(shared_ptr<MBVirtualRTUSlave> newSlave) {
     index = curSlave->getSlaveAddr();
     lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
-    std::map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
+    std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
     if (it == m_slavelist.end()) {
 	    m_slavelist[index] = newSlave;
 	    return true;
@@ -56,11 +56,11 @@ bool SlaveList::addSlave(shared_ptr<MBVirtualRTUSlave> newSlave) {
     return false;
 }
 
-shared_ptr<MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
-	shared_ptr<MBVirtualRTUSlave> result;
+shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
+	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> result;
 	lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
-	std::map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
+	std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
 	if (it != m_slavelist.end()) {
 		result = it->second; //get reference
 		m_slavelist.erase(it); //remove from list
@@ -68,9 +68,9 @@ shared_ptr<MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
 	return result;
 }
 
-shared_ptr<MBVirtualRTUSlave> SlaveList::getSlave(uint8_t index) {
-    shared_ptr<MBVirtualRTUSlave> result;
-	std::map<uint8_t, shared_ptr<MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
+shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::getSlave(uint8_t index) {
+    shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> result;
+	std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
 	if (it != m_slavelist.end()) {
 		return it->second; //get pointer
 	}

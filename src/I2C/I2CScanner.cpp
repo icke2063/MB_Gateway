@@ -64,7 +64,7 @@ void I2C_Scanner::thread_function(void) {
 	uint8_t slave_not_found_counter[MAX_I2C_SLAVE_ADR];
 	memset(slave_not_found_counter, 0, MAX_I2C_SLAVE_ADR);	//initiate array
 
-	shared_ptr<MBVirtualRTUSlave> curSlave;
+	shared_ptr<MB_Framework::MBVirtualRTUSlave> curSlave;
 
 	while (m_running) {
 //		m_scanner_thread->yield();	

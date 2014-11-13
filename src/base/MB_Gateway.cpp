@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <build_options.h>
+
 #ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <memory>
   using namespace std;
@@ -45,16 +47,13 @@ using namespace icke2063::MB_Gateway;
 
 int main() {
 
-	shared_ptr<ThreadPool> pool(new ThreadPool());
+	shared_ptr<icke2063::threadpool::ThreadPool> pool(new icke2063::threadpool::ThreadPool(5));
 	pool->setHighWatermark(10);
-	pool->setLowWatermark(1);
+	pool->setLowWatermark(3);
 	
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	unique_ptr<Server> default_server(new Server(502,pool));
-#else
-	scoped_ptr<Server> default_server(new Server(502,pool));
-#endif
+
+	std::auto_ptr<Server> default_server(new Server(1502,pool));
 	  
 
 	//	unique_ptr<Server> custom_server;

@@ -10,6 +10,8 @@
 #ifndef I2CCOMM_H_
 #define I2CCOMM_H_
 
+#include <build_options.h>
+
 //std lib
 #ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <mutex>

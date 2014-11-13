@@ -16,7 +16,7 @@
 namespace icke2063 {
 namespace MB_Gateway {
 
-int MultiRegisterHandler::handleReadAccess(MBHandlerParam *param) {
+int MultiRegisterHandler::handleReadAccess(icke2063::MB_Framework::MBHandlerParam *param) {
 	uint16_t address;
 	uint16_t register_count;
 
@@ -95,7 +95,7 @@ int MultiRegisterHandler::handleReadAccess(MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 
-int MultiRegisterHandler::handleWriteAccess(MBHandlerParam *param) {
+int MultiRegisterHandler::handleWriteAccess(icke2063::MB_Framework::MBHandlerParam *param) {
 	uint8_t slave;
 	uint16_t address;
 	uint16_t register_count;
@@ -146,7 +146,7 @@ int MultiRegisterHandler::handleWriteAccess(MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 
-int MultiRegisterHandler::checkWriteAccess(MBHandlerParam *param) {
+int MultiRegisterHandler::checkWriteAccess(icke2063::MB_Framework::MBHandlerParam *param) {
 	uint16_t register_count;
 
 	logger->debug("MultiRegisterHandler::checkWriteAccess");

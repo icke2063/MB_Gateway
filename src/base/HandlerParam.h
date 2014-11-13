@@ -11,15 +11,14 @@
 #define HANDLERPARAM_H_
 
 //libmodbus
-
+#include <modbus/modbus.h>
 #include <MBHandlerInt.h>
-
-using namespace icke2063::MB_Framework;
 
 namespace icke2063 {
 namespace MB_Gateway {
 
-class HandlerParam: public MB_Framework::MBHandlerParam {
+class HandlerParam:
+	public MB_Framework::MBHandlerParam {
 public:
 	HandlerParam(uint8_t slave, uint8_t function, uint16_t address, uint16_t count, modbus_mapping_t *mb_mapping):
 	m_slave(slave),

@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <list>
 
+#include <build_options.h>
+
 #ifndef ICKE2063_CRUMBY_NO_CPP11
 	#include <memory>
 	#include <thread>
@@ -43,20 +45,18 @@
 
 //MB_Framework
 #include <MBServer.h>
-using namespace icke2063::MB_Framework;
-
 #include <Logger.h>
-using namespace icke2063::common_cpp;
-
 #include <ThreadPool.h>
-using namespace icke2063::threadpool;
+
 
 namespace icke2063 {
 namespace MB_Gateway {
 
-class Server : public MBServer, public Logger{
+class Server :
+	public icke2063::MB_Framework::MBServer,
+	public icke2063::common_cpp::Logger{
 public:
-	Server(uint16_t port, SERVER_H_NS::shared_ptr<ThreadPool> ext_pool);
+	Server(uint16_t port, SERVER_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> ext_pool);
 	virtual ~Server();
 
 private:
@@ -74,18 +74,15 @@ private:
 	 */
 	void connection_handler(void);
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	std::unique_ptr<std::thread> m_server_thread;
-	std::unique_ptr<std::thread> m_conn_handler_thread;
-#else
-	boost::scoped_ptr<boost::thread> m_server_thread;
-	boost::scoped_ptr<boost::thread> m_conn_handler_thread;
-#endif
+
+	std::auto_ptr<SERVER_H_NS::thread> m_server_thread;
+	std::auto_ptr<SERVER_H_NS::thread> m_conn_handler_thread;
+
 
 	bool m_server_running;
 	int m_server_socket;
 
-	SERVER_H_NS::shared_ptr<ThreadPool> pool;
+	SERVER_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> pool;
 
 };
 

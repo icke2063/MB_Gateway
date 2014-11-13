@@ -40,7 +40,7 @@ VersionHandler::VersionHandler() :
 	enableReadInpReg = false; //disable input register access
 }
 
-int VersionHandler::handleReadAccess(MBHandlerParam *param) {
+int VersionHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 
 	uint8_t count = ((VERSION_LENGTH / 2) + (VERSION_LENGTH % 2));
 
@@ -63,7 +63,7 @@ int VersionHandler::handleReadAccess(MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 
-int DataHandler::handleReadAccess(MBHandlerParam *param) {
+int DataHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 	logger->debug("DataHandler::handleReadAccess");
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
@@ -91,7 +91,7 @@ int DataHandler::handleReadAccess(MBHandlerParam *param) {
 	}
 	return 0; //return zero register handled > modbus exception
 }
-int DataHandler::checkWriteAccess(MBHandlerParam *param) {
+int DataHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 	logger->debug("DataHandler::checkWriteAccess");
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
@@ -176,13 +176,13 @@ bool IOBoard_Slave::init(void) {
 	shared_ptr<HolRegHandlerRO> HoldingRO;
 
 	lock_guard<mutex> lock(*(boost::serialization::singleton<HandlerList>::get_mutable_instance().m_handlerlist_lock.get()));
-	std::list<shared_ptr<MBHandlerInt> > *phandlerlist = &(boost::serialization::singleton<
+	std::list<shared_ptr<MB_Framework::MBHandlerInt> > *phandlerlist = &(boost::serialization::singleton<
 			HandlerList>::get_mutable_instance().m_handlerlist);
 
-	std::list<shared_ptr<MBHandlerInt> >::iterator handler_it = phandlerlist->begin(); // get first handler
+	std::list<shared_ptr<MB_Framework::MBHandlerInt> >::iterator handler_it = phandlerlist->begin(); // get first handler
 
 	while (handler_it != phandlerlist->end()) {
-	  shared_ptr<MBHandlerInt> listitem =*handler_it;
+	  shared_ptr<MB_Framework::MBHandlerInt> listitem =*handler_it;
 		/* MultiByte */
 		if (Multi.get() == nullptr ) {
 			Multi = dynamic_pointer_cast<MultiByteHandler>(listitem);

@@ -26,7 +26,7 @@ using namespace boost;
 namespace icke2063 {
 namespace MB_Gateway {
 
-SummerySlave::SummerySlave(shared_ptr<ThreadPool> delayed_pool, uint8_t SlaveAddr, unsigned int timeout) :
+SummerySlave::SummerySlave(shared_ptr<threadpool::ThreadPool> delayed_pool, uint8_t SlaveAddr, unsigned int timeout) :
 		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true), m_timeout(timeout),m_delayed_pool(delayed_pool){
 	logger = &log4cpp::Category::getInstance(std::string("SummerySlave"));
 	logger->setPriority(log4cpp::Priority::ERROR);
@@ -57,7 +57,7 @@ if(m_delayed_pool.get()){
     logger->info("addFunctor\n");
   struct timeval now;
   gettimeofday(&now,NULL);
-  m_delayed_pool->delegateDelayedFunctor( shared_ptr<DelayedFunctorInt>( new DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
+  m_delayed_pool->delegateDelayedFunctor( shared_ptr<threadpool::DelayedFunctorInt>( new threadpool::DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
 
 }
   
@@ -117,7 +117,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 		  gettimeofday(&now,NULL);
 		  now.tv_usec += 100;
 
-		 m_slave->m_delayed_pool->delegateDelayedFunctor(shared_ptr<DelayedFunctorInt>(new DelayedFunctor(new SummerySlaveFunctor(m_slave), &now)));
+		 m_slave->m_delayed_pool->delegateDelayedFunctor(shared_ptr<threadpool::DelayedFunctorInt>(new threadpool::DelayedFunctor(new SummerySlaveFunctor(m_slave), &now)));
 
 
 	}

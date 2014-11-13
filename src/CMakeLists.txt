@@ -11,7 +11,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/base
     ${MB_Framework_SOURCE_DIR}/include
-    ${MB_Framework_SOURCE_DIR}/config
+    ${MB_Framework_BINARY_DIR}/config
 )
 
 ## find extern lib

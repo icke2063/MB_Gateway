@@ -15,14 +15,14 @@
 
 #include <modbus/modbus.h>
 
-using namespace icke2063::MB_Framework;
-
 namespace icke2063 {
 namespace MB_Gateway {
 
-class VirtualRTUSlave: public MBVirtualRTUSlave {
+class VirtualRTUSlave:
+	public icke2063::MB_Framework::MBVirtualRTUSlave {
 public:
-	VirtualRTUSlave(uint8_t SlaveAddr):MBVirtualRTUSlave(SlaveAddr),m_mapping(NULL) {}
+	VirtualRTUSlave(uint8_t SlaveAddr):
+		icke2063::MB_Framework::MBVirtualRTUSlave(SlaveAddr),m_mapping(NULL) {}
 	virtual ~VirtualRTUSlave() {
 		if(m_mapping)modbus_mapping_free(m_mapping);
 	}

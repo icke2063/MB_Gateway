@@ -54,7 +54,7 @@ std::string i2c_string = "";
 </%args>
 <div id="i2c_form">
 <%cpp>
-shared_ptr<MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 if( p_slave.get() != NULL ){	
 	uint8_t recvbuffer[100];
 	

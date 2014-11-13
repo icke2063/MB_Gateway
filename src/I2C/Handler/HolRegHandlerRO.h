@@ -26,10 +26,10 @@ public:
 	virtual ~HolRegHandlerRO() {
 	}
 
-	virtual int checkWriteAccess(MBHandlerParam *param) {
+	virtual int checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 		return 0;
 	} //disable write support
-	virtual int handleWriteAccess(MBHandlerParam *param) {
+	virtual int handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 		return 0;
 	} //disable write support
 };

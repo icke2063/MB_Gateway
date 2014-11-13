@@ -10,7 +10,7 @@
 #ifndef I2CSCANNER_H_
 #define I2CSCANNER_H_
 
-#define MAX_SCAN_FAIL 5
+#include <build_options.h>
 
 //std lib
 #ifndef ICKE2063_CRUMBY_NO_CPP11
@@ -29,10 +29,10 @@
 #define I2CSCANNER_H_NS boost
 #endif
 
+#define MAX_SCAN_FAIL 5
 
 //own lib
 #include <Logger.h>
-using namespace icke2063::common_cpp;
 
 #include <I2CSlave.h>
 
@@ -42,7 +42,7 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-class I2C_Scanner: public Logger {
+class I2C_Scanner: public common_cpp::Logger {
 public:
 	I2C_Scanner(unsigned int timeout = DEFAULT_SCAN_TIMEOUT_MS);
 	virtual ~I2C_Scanner();

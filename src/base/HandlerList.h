@@ -12,26 +12,14 @@
 
 #include <MBHandlerList.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	#include <mutex>
-
-	#define HANDLERLIST_H_NS std
-#else
-	#include <boost/thread/mutex.hpp>
-
-	#define HANDLERLIST_H_NS boost
-#endif
-
-using namespace icke2063::MB_Framework;
-using namespace icke2063::common_cpp;
-
 namespace icke2063 {
 namespace MB_Gateway {
 
-class HandlerList:public MBHandlerList {
+class HandlerList:
+	public icke2063::MB_Framework::MBHandlerList {
 public:
 	HandlerList() {
-		m_handlerlist_lock.reset(new HANDLERLIST_H_NS::mutex());
+		m_handlerlist_lock.reset(new MBHL_NS::mutex());
 
 	}
 	virtual ~HandlerList() {}

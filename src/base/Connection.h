@@ -24,6 +24,8 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
+#include <build_options.h>
+
 #ifndef ICKE2063_CRUMBY_NO_CPP11
 	#include <memory>
 	#include <thread>
@@ -50,19 +52,20 @@
 #include <Logger.h>
 #include <ThreadPool.h>
 
-using namespace icke2063::MB_Framework;
-using namespace icke2063::common_cpp;
-using namespace icke2063::threadpool;
-
 namespace icke2063 {
 namespace MB_Gateway {
 
-class Connection: public MBConnection, public Logger, public CONNECTION_H_NS::enable_shared_from_this<Connection>{
+class Connection:
+	public icke2063::MB_Framework::MBConnection,
+	public icke2063::common_cpp::Logger{
+
+		friend class Server;	//ok lets play together ;-)
 
 	/**
 	 * Functor class for request handling by ThreadPool
 	 */
-	class ConnFunctor: public Functor{
+	class ConnFunctor:
+		public icke2063::threadpool::Functor{
 	public:
 		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):p_conn(conn){}
 		virtual ~ConnFunctor(){}
@@ -85,15 +88,6 @@ public:
 	virtual ~Connection();
 	modbus_t *getConnInfo (void){return p_ctx;}
 	
-	/**
-	 * Threadpool functor creator
-	 * create functor object for ThreadPool handling
-	 * - object locks Connection while handling query
-	 * - use functions of this class to handle query
-	 * @return
-	 */
-	Functor *getFunctor( void ){return new Connection::ConnFunctor(shared_from_this());}
-
 private:
 	bool m_connection_running;
 

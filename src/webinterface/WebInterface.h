@@ -10,6 +10,7 @@
 #ifndef WEBINTERFACE_H_
 #define WEBINTERFACE_H_
 
+#include <build_options.h>
 
 //std lib
 #ifndef ICKE2063_CRUMBY_NO_CPP11
@@ -28,25 +29,20 @@
 //own lib
 #include <Logger.h>
 
-using namespace icke2063::common_cpp;
-
 namespace icke2063 {
 namespace MB_Gateway {
 
-class WebInterface : public Logger{
+class WebInterface : public common_cpp::Logger{
 public:
 	WebInterface(uint16_t port=8000);
 	virtual ~WebInterface();
 
 private:
 	uint16_t m_port;
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	std::unique_ptr<tnt::Tntnet> server;
-	std::unique_ptr<std::thread> p_server_thread;
-#else
-	boost::scoped_ptr<tnt::Tntnet> server;
-	boost::scoped_ptr<boost::thread> p_server_thread;
-#endif
+
+	std::auto_ptr<tnt::Tntnet> server;
+	std::auto_ptr<WEBINTERFACE_H_NS::thread> p_server_thread;
+
 	bool m_running;
 
 	virtual void thread_function (void);

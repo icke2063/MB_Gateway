@@ -10,6 +10,8 @@
 #ifndef IOBOARDSLAVE_H_
 #define IOBOARDSLAVE_H_
 
+#include <build_options.h>
+
 #ifndef ICKE2063_CRUMBY_NO_CPP11
 	#include <memory>
 	#define IOBOARDSLAVE_H_NS std
@@ -25,7 +27,6 @@
 
 #include <Logger.h>
 #include <MultiByteHandler.h>
-using namespace icke2063::MB_Framework;
 
 #include <I2CSlave.h>
 #include <HandlerParam.h>
@@ -40,11 +41,11 @@ public:
 	VersionHandler();
 	virtual ~VersionHandler() {}
 
-	virtual int handleReadAccess(MBHandlerParam *param);
-	virtual int checkWriteAccess(MBHandlerParam *param) {
+	virtual int handleReadAccess(MB_Framework::MBHandlerParam *param);
+	virtual int checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 		return 0;
 	}	//disable write access
-	virtual int handleWriteAccess(MBHandlerParam *param) {
+	virtual int handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 		return 0;
 	}	//disable write access
 };
@@ -54,8 +55,8 @@ public:
 	DataHandler():MultiByteHandler(_16bit,-1){}
 	virtual ~DataHandler() {}
 
-	virtual int handleReadAccess(MBHandlerParam *param);
-	virtual int checkWriteAccess(MBHandlerParam *param);
+	virtual int handleReadAccess(MB_Framework::MBHandlerParam *param);
+	virtual int checkWriteAccess(MB_Framework::MBHandlerParam *param);
 };
 
 

@@ -10,6 +10,8 @@
 #ifndef I2CSLAVE_H_
 #define I2CSLAVE_H_
 
+#include <build_options.h>
+
 #ifndef ICKE2063_CRUMBY_NO_CPP11
 	#include <memory>
 	#define I2CSLAVE_H_NS std

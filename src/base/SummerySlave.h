@@ -10,6 +10,8 @@
 #ifndef SUMMERYSLAVE_H_
 #define SUMMERYSLAVE_H_
 
+#include <build_options.h>
+
 //std lib
 #ifndef ICKE2063_CRUMBY_NO_CPP11
   #include <memory>
@@ -43,16 +45,17 @@
 #define DEFAULT_SUMMERY_COUNT	256
 #define DEFAULT_SUMMERY_VALUE	0
 
-using namespace icke2063::MB_Framework;
-using namespace icke2063::common_cpp;
-using namespace icke2063::threadpool;
-
 namespace icke2063 {
 namespace MB_Gateway {
 
-class SummerySlave: public VirtualRTUSlave, public Logger, public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlave> {
+class SummerySlave:
+	public VirtualRTUSlave,
+	public icke2063::common_cpp::Logger,
+	public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlave> {
   
-  class SummerySlaveFunctor: public Functor,public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlaveFunctor>{
+  class SummerySlaveFunctor:
+	  public icke2063::threadpool::Functor,
+	  public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlaveFunctor>{
   public:
     SummerySlaveFunctor(SUMMERYSLAVE_H_NS::shared_ptr<SummerySlave> slave):m_slave(slave){}
     virtual ~SummerySlaveFunctor(){}
@@ -65,7 +68,7 @@ class SummerySlave: public VirtualRTUSlave, public Logger, public SUMMERYSLAVE_H
   friend class SummerySlaveFunctor;
   
 public:
-	SummerySlave(SUMMERYSLAVE_H_NS::shared_ptr<ThreadPool> delayed_pool, uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
+	SummerySlave(SUMMERYSLAVE_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> delayed_pool, uint8_t SlaveAddr = DEFAULT_SUMMERY_ADDR, unsigned int timeout = DEFAULT_SUMMERY_TIMEOUT_MS);
 	virtual ~SummerySlave();
 	virtual uint8_t getType( void ){return SLAVE_TYPE_SUMMERY;}
 	void startFunctor(void);
@@ -79,7 +82,7 @@ private:
 	SUMMERYSLAVE_H_NS::condition_variable m_Condition;  // Condition variable for timed_wait
 	SUMMERYSLAVE_H_NS::mutex m_Mutex;                   // Mutex
 	unsigned int m_timeout;
-	SUMMERYSLAVE_H_NS::shared_ptr<ThreadPool> m_delayed_pool;
+	SUMMERYSLAVE_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> m_delayed_pool;
 };
 
 } /* namespace MB_Gateway */
