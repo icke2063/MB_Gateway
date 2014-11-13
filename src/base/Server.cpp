@@ -155,7 +155,6 @@ void Server::waitForConnection(void){
 				lock_guard<mutex> lock(*m_conn_lock.get());
 				openConnections.push_back(shared_ptr<Connection>(new Connection(ctx_tmp)));
 			}
-			modbus_free(ctx_tmp);
 		}else
 		{
 			logger->debug("error modbus_tcp_accept");

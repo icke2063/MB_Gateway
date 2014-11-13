@@ -70,8 +70,9 @@ Connection::~Connection() {
 	logger->info("~Connection\n");
 	/* Connection closed by the client or error */
 	m_connection_running = false;
-	if(m_connection_running){
+	if(p_ctx){
 		modbus_close(p_ctx);
+		p_ctx = NULL;
 	}
 }
 
@@ -225,6 +226,7 @@ void Connection::ConnFunctor::functor_function(void) {
 	  return;								//check existence of parent class
 	}
 	p_ctx = p_conn->getConnInfo();
+	if(p_ctx == NULL)return;
 
 	/* Watch stdin (fd 0) to see when it has input. */
 
