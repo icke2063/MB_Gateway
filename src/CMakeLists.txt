@@ -92,7 +92,7 @@ add_executable (${PROJECT_NAME} base/MB_Gateway.cpp
   ${I2C_SOURCES}
 )
 
-#add_executable (testclient testclient/MBGateway_Testclient.cpp)
+add_executable (testclient testclient/MBGateway_Testclient.cpp)
 
 
 ### ADD PREPROCESS MACROS ###
@@ -114,10 +114,10 @@ target_link_libraries(${PROJECT_NAME}
 	cxxtools
 )
 
-#target_link_libraries(testclient
-#	${MODBUS_LIB}
-#	${Boost_LIBRARIES}
-#)
+target_link_libraries(testclient
+	${MODBUS_LIB}
+	${Boost_LIBRARIES}
+)
 ### INSTALL ###
 
 INSTALL(TARGETS ${PROJECT_NAME}

@@ -167,23 +167,23 @@ void printSummeryList(void) {
 	uint16_t value;
 	string sandbox = "/-\\";
 
+	printf("printSummeryList\n");
+
 	if (mb != NULL) {
-
+		modbus_set_slave(mb, summery);
 		for (int i = 0; i < DEFAULT_SUMMERY_COUNT; i++) {
-//		for (int i = 0; i < 0x44; i++) {
-
-			modbus_set_slave(mb, summery);
 			ret = modbus_read_input_registers(mb, i, 1, &value);
 			if (ret > 0) {
 				if (value != DEFAULT_SUMMERY_VALUE) {
-					cout << "\rSummery Slave[0x" << hex << i << "]: 0x" << hex
-							<< value << endl;
+					cout << "\rSummery Slave[0x" << hex << i << "]: 0x" << hex << value << endl;
 					printSlaveInfo(i, value);
 					printf("\n");
 				} else {
 					printf("\r%c", sandbox.c_str()[i % 3]);
 					fflush(stdout);
 				}
+			} else {
+
 			}
 		}
 		printf("\r");
@@ -244,8 +244,9 @@ void printIOBoardSlave(uint8_t address) {
 
 		printf("RAM:\n");
 		//get ID
+		ret = modbus_read_registers(mb, 0, 1, value);
 		if (ret > 0){
-			ret = modbus_read_registers(mb, 0, 1, value);
+
 
 			if(vm.count("p_slaveID")>0){
 				printf("[%i]\tSlaveID:\t\t 0x%x\n", 0, value[0]);
@@ -257,7 +258,10 @@ void printIOBoardSlave(uint8_t address) {
 				((VERSION_LENGTH / 2) + (VERSION_LENGTH % 2)), value);
 			value[ret < 32 ? ret : 31] = '\0';
 			if (ret > 0){
-				printf("[%i]\tVersion:\t\t %s\n", VERSION_START / 2, value);
+				printf("[%i]\tVersion:\t\t\n", VERSION_START / 2);
+				for(int i=0;i<ret;i++){
+					printf("%c%c", (char)(value[i] >> 8), (char)(value[i] & 0xFF));
+				}
 			}
 		}
 
@@ -348,7 +352,10 @@ void printIOBoardSlave(uint8_t address) {
 					case PIN_UART:
 						printf("uart \n");
 						break;
-					case PIN_OW:
+					case PIN_OW_POWER_PARASITE:
+						printf("1-wire \n");
+						break;
+					case PIN_OW_POWER_EXTERN:
 						printf("1-wire \n");
 						break;
 					case PIN_ADC:
@@ -369,10 +376,14 @@ void printIOBoardSlave(uint8_t address) {
 								+ (i * (IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2));
 				ret = modbus_read_registers(mb, handler_address, 8, value);
 
-				printf("[%i]:\t", handler_address, ret);
+				printf("[%i]:\t", handler_address);
 				if (ret > 0) {
 					value[ret] = '\0';
-					printf("Name:\t %s \n", value);
+					printf("Name:\t \n");
+
+					for(int i=0;i<ret;i++){
+						printf("%c%c", (char)(value[i] >> 8), (char)(value[i] & 0xFF));
+					}
 				} else {
 					printf("no name\n");
 				}
