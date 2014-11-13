@@ -183,10 +183,9 @@ DEBUG OUTPUT<br>
 		<th>Aktion</th>
 	</tr>
 	<tr><# little I2C address formular #>
-		<form action="<$ request.getUrl() $>" method="post" accept-charset="ISO-8859-1">
-			<input type='hidden' name='request_i2c_io_board' value='chgaddr' />
+		<form action="<$ request.getUrl() $>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">
 			<td>I2C Add:</td>
-			<td><input name="SlaveNr" value="<$ SlaveNr $>"></td>
+			<td><& form_elem_I2C_address qparam></td>
 			<td></td>
 			<td><input type="submit" value="Ändern"></td>
 		</form>
@@ -244,7 +243,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	<tr>
 %for(pin=0;pin<12;pin=pin+2){
 		<td>
-			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=glob_write_enable >
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=glob_write_enable qparam>
 			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
 		</td>
 %}
@@ -409,6 +408,7 @@ if(request_table_io_board_viopin != ""){
 int pinNr = 0;
 int func_code = 0;
 int write_enable = 0;
+int SlaveNr = 0;
 </%args>
 %if(write_enable >= 0){
 <select name="vio_func" size="1">
@@ -417,6 +417,8 @@ int write_enable = 0;
 	<option value="<$ func_code == PIN_SWITCH?(255<<8):(uint16_t)((pinNr<<8) | PIN_SWITCH) $>" <$ func_code == PIN_SWITCH?"selected":"" $>>switch</option>
 	<option value="<$ func_code == PIN_TOGGLE?(255<<8):(uint16_t)((pinNr<<8) | PIN_TOGGLE) $>" <$ func_code == PIN_TOGGLE?"selected":"" $>>toggle</option>
 	<option value="<$ func_code == PIN_PULSE?(255<<8):(uint16_t)((pinNr<<8) | PIN_PULSE) $>" <$ func_code == PIN_PULSE?"selected":"" $>>pulse</option>
+	<option value="<$ func_code == PIN_OW_POWER_PARASITE?(255<<8):(uint16_t)((pinNr<<8) | PIN_OW_POWER_PARASITE) $>" <$ func_code == PIN_OW_POWER_PARASITE?"selected":"" $>>ow parasite</option>
+	<option value="<$ func_code == PIN_OW_POWER_EXTERN?(255<<8):(uint16_t)((pinNr<<8) | PIN_OW_POWER_EXTERN) $>" <$ func_code == PIN_OW_POWER_EXTERN?"selected":"" $>>pulse</ow extern>
 </select>
 %}else{
 %	switch(func_code){
@@ -435,6 +437,39 @@ int write_enable = 0;
 %		case PIN_PULSE:
 			<$ "pulse" $>
 %			break;
+%		case PIN_OW_POWER_PARASITE:
+			<$ "ow parasite" $>
+%			break;
+%		case PIN_OW_POWER_EXTERN:{	
+<%cpp>
+		uint8_t recvbuffer[4];
+		uint8_t ram_virt_data_addr = 0;
+		int port_num = pinNr/8;
+		int pin_num = pinNr%8;
+		int16_t ow_value = -255;
+		uint8_t seqnr, data_status;
+		bool i2c_open = false;
+
+		ram_virt_data_addr = VIRTUAL_DATA_START + (port_num * (VIRTUAL_PORT_PINCOUNT * VIRTUAL_DATA_LENGTH)) + (pin_num * VIRTUAL_DATA_LENGTH);
+		
+		//get data by i2c request
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+
+		memset(recvbuffer, 0, 2);
+		recvbuffer[0] = (ram_virt_data_addr >> 8); //first high
+		recvbuffer[1] = (ram_virt_data_addr & 0xff); //second low
+	 
+		if(i2c_open && boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, 2, 4)){
+			seqnr = recvbuffer[0];
+			data_status = recvbuffer[1];
+			ow_value = recvbuffer[2] << 8;
+			ow_value |= recvbuffer[3];
+</%cpp>
+			SQ:<$ (int)seqnr $>;DS:<$ (int)data_status $>;V:<$ (int)ow_value $>		
+%		}else{
+			ow read error: Slv:<$ (int)SlaveNr$>; Addr:<$ (int)ram_virt_data_addr $>
+%		}		
+%			}break;
 %		default:
 			<$ "unknown" $>
 %			break;
@@ -553,6 +588,9 @@ int vio_port = 0;
 	<input type="checkbox" name="viopin" value="<$ (uint16_t)((pin_func << 8) | pin) $>">
 <%cpp>		
 			break;		
+		case PIN_OW_POWER_PARASITE:
+		case PIN_OW_POWER_EXTERN:
+			break;
 		case PIN_DISABLED:
 		case PIN_INPUT:
 		default:
@@ -575,7 +613,7 @@ pin:	<$ pin $>
 pin_func: <$ pin_func $>
 vio_port: <$ vio_port $>
 <%cpp>
-	std::string back_color="rgb(255,255,255)";
+	std::string back_color="rgb(190,205,205)";
 	std::string text_color="rgb(255,255,255)";
 		switch(pin_func){
 		case PIN_DISABLED:
@@ -594,13 +632,66 @@ vio_port: <$ vio_port $>
 			break;
 		case PIN_PULSE:
 			back_color = "rgb(0,153,153)";
-			break;		
+			break;
+		case PIN_OW_POWER_PARASITE:
+		case PIN_OW_POWER_EXTERN:		
+			back_color = "rgb(131,111,255)";
+			break;
 		default:
 		break;
 	}
 </%cpp>
 style="color: <$ text_color $>; background-color: <$ back_color $>; height: 10px;"
 </%def>
+
+<############################>
+<# elem:  set slave ID		#>
+<############################>
+<%def form_elem_I2C_address>
+<%args>
+int SlaveNr = 0;	//current slave I2C address
+int NSlaveNr = -1;	//new slave I2C address
+</%args>
+<& handle_request_I2C_address qparam>
+
+	<input type='hidden' name='request_elem_I2C_address' value='chgaddr' />
+	<input name="NSlaveNr" value="<$ NSlaveNr>0?NSlaveNr:SlaveNr $>">]
+</%def>
+
+
+<###############################>
+<# handle eeprom write enable  #>
+<###############################>
+<%def handle_request_I2C_address>
+<%args>
+std::string request_elem_I2C_address ="";
+
+int SlaveNr = 0;
+int NSlaveNr = -1;	//new slave I2C address
+int debug = 0;
+</%args>
+<%cpp>
+	uint8_t recvbuffer[3];
+	bool i2c_open = false;
+	if(request_elem_I2C_address == "chgaddr" && NSlaveNr > 0 && NSlaveNr < 128){
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1"))i2c_open = true;
+		
+		recvbuffer[0] = (I2C_BUFFER_SIZE >> 8); //first high
+		recvbuffer[1] = (I2C_BUFFER_SIZE & 0xff); //second low
+	
+		recvbuffer[2] = NSlaveNr;
+		
+		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen() 
+				&& boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, 2, 1)) {
+			if(debug>0)messages += "address write success<br>";
+		} else {
+			if(debug>0)messages += "address write failure<br>";
+		}	
+	
+	}
+</%cpp>
+</%def>
+
 
 
 <####################################>
