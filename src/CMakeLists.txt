@@ -17,7 +17,6 @@ include_directories(
 ## find extern lib
 find_library(MODBUS_LIB modbus)
 find_library(LOG4CPP log4cpp)
-FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 
 
 ### ADD SOURCES ###

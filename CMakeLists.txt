@@ -18,9 +18,10 @@ ADD_DEFINITIONS(-std=c++0x)
   #enable c++11
   enable_cxx11()
   message(STATUS "use C++11")
+  FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 else()
   #use boost fallback
-  FIND_PACKAGE(Boost COMPONENTS thread system serialization chrono REQUIRED)
+  FIND_PACKAGE(Boost COMPONENTS program_options thread system serialization chrono REQUIRED)
   message(STATUS "use boost")
   add_definitions( "-DICKE2063_THREADPOOL_NO_CPP11=1")
   add_definitions("-DICKE2063_MBFRAMEWORK_NO_CPP11=1")
