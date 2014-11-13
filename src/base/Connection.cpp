@@ -55,7 +55,7 @@ Connection::Connection(modbus_t *ctx) :
 		m_connection_running(false) {
 
 	logger = &log4cpp::Category::getInstance(std::string("connection"));
-	logger->setPriority(log4cpp::Priority::DEBUG);
+	logger->setPriority(log4cpp::Priority::INFO);
 	if (console)logger->addAppender(console);
 
 	/* validate connection information and enable functor_function */
