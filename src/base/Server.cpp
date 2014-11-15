@@ -61,18 +61,18 @@ Server::Server(uint16_t port, shared_ptr<threadpool::ThreadPool> ext_pool):
 	 * @todo do this by configfile
 	 */
 	logger = &log4cpp::Category::getInstance(std::string("Server"));
-	logger->setPriority(log4cpp::Priority::DEBUG);
+	logger->setPriority(log4cpp::Priority::ERROR);
 	if(console)logger->addAppender(console);
 
-	logger->info("Modbus TCP Server@%i",m_port);
+	logger->notice("Modbus TCP Server@%i",m_port);
 
 	m_conn_lock.reset(new mutex());
 
 	if(ext_pool.get()){
 	  pool = ext_pool;
-	  logger->info("extern threadpool");
+	  logger->info("Server use extern ThreadPool");
 	} else {
-	  logger->info("intern threadpool");
+	  logger->info("Server use intern ThreadPool");
 	  pool = shared_ptr<threadpool::ThreadPool>(new threadpool::ThreadPool());
 	  pool->setHighWatermark(5);
 	}
@@ -88,12 +88,12 @@ Server::Server(uint16_t port, shared_ptr<threadpool::ThreadPool> ext_pool):
 }
 
 Server::~Server() {
-	logger->info("enter ~Server");
+	logger->notice("~Server");
 	m_server_running = false;
 	if(m_server_thread.get() && m_server_thread->joinable())m_server_thread->join();
 	if(m_conn_handler_thread.get() && m_conn_handler_thread->joinable())m_conn_handler_thread->join();
 
-	logger->info("leave ~Server");
+	logger->debug("leave ~Server");
 }
 
 void Server::waitForConnection(void){
@@ -105,7 +105,7 @@ void Server::waitForConnection(void){
     /* libmodbus */
 	modbus_t *ctx;
 
-	logger->debug("Server Functor@%i",m_port);
+	logger->debug("Server Thread@%i",m_port);
 
 	//prepare listening
 	ctx = modbus_new_tcp("127.0.0.1", m_port);
@@ -153,10 +153,9 @@ void Server::waitForConnection(void){
 		modbus_t *ctx_tmp;
 		ctx_tmp = modbus_new_tcp("127.0.0.1", m_port);
 
-		std::cout << "before modbus accept" << std::endl;
 		if (modbus_tcp_accept(ctx_tmp, &m_server_socket) != -1) {
 
-			logger->debug("modbus_tcp_accept:%i",modbus_get_socket(ctx_tmp));
+			logger->info("modbus_tcp_accept:%i",modbus_get_socket(ctx_tmp));
 
 			if(m_conn_lock.get() != NULL){
 				lock_guard<mutex> lock(*m_conn_lock.get());
@@ -170,7 +169,7 @@ void Server::waitForConnection(void){
 			}
 		}else
 		{
-			logger->debug("error modbus_tcp_accept");
+			logger->error("error modbus_tcp_accept");
 		}
 
 	}
@@ -186,8 +185,6 @@ void Server::connection_handler (void){
     struct timeval tv;
     int retval;
     std::list<shared_ptr<MB_Framework::MBConnection> >::iterator conn_it;
-    shared_ptr<Connection> curConn;
-
 
     while (m_server_running)
     {
@@ -205,8 +202,7 @@ void Server::connection_handler (void){
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				shared_ptr<MB_Framework::MBConnection> tmpConn = *conn_it;
-				curConn =  dynamic_pointer_cast<Connection> (tmpConn);
+				shared_ptr<Connection> curConn =  dynamic_pointer_cast<Connection> (*conn_it);
 
 				if(curConn.get() && curConn->getStatus() == MB_Framework::MBConnection::open){//add open connection into set
 					FD_SET(modbus_get_socket(curConn->getConnInfo()), &rfds);
@@ -214,7 +210,7 @@ void Server::connection_handler (void){
 				}
 
 				if(curConn->getStatus() == MB_Framework::MBConnection::closed){//remove closed connection
-					logger->debug("remove Connection\n");
+					logger->debug("remove Connection[%d]\n",modbus_get_socket(curConn->getConnInfo()));
 					//delete curConn; //done by shared_ptr
 					conn_it = openConnections.erase(conn_it);
 					continue;
@@ -244,8 +240,7 @@ void Server::connection_handler (void){
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				curConn =  dynamic_pointer_cast<Connection>(*conn_it);
-				if(curConn.get())logger->debug("found connection\n");
+				shared_ptr<Connection> curConn =  dynamic_pointer_cast<Connection>(*conn_it);
 				if(curConn.get() && FD_ISSET(modbus_get_socket( curConn->getConnInfo() ), &rfds)){//add open connection into set
 					curConn -> setStatus(MB_Framework::MBConnection::busy);
 					logger->debug("data on socket[%d]\n",modbus_get_socket( curConn->getConnInfo()));
@@ -255,13 +250,11 @@ void Server::connection_handler (void){
 					  usleep(100);
 					}
 
-					if(m_server_running && ((tmpFunctor = pool->delegateFunctor(tmpFunctor))) != NULL  ){
-					  logger->error("Functor not added\n");
+					if(tmpFunctor != NULL  ){
+					  logger->error("Functor could not be added\n");
 					  delete tmpFunctor;
 					  curConn -> setStatus(MB_Framework::MBConnection::open);
 					}
-					//tmpFunctor->functor_function();
-
 				}
 				++conn_it;
 			}
