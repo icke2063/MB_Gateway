@@ -86,7 +86,7 @@ if (I2C_SUPPORT)
 endif (I2C_SUPPORT)
 
 ### ADD TARGET ###
-add_executable (${PROJECT_NAME} base/MB_Gateway.cpp
+add_executable (${PROJECT_NAME} base/main.cpp
   ${DEF_SOURCES}
   ${PAGES_CPP_SRC}
   ${I2C_SOURCES}
