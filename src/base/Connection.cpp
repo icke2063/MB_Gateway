@@ -55,12 +55,14 @@ Connection::Connection(modbus_t *ctx) :
 		m_connection_running(false) {
 
 	logger = &log4cpp::Category::getInstance(std::string("connection"));
-	logger->setPriority(log4cpp::Priority::INFO);
+	logger->setPriority(log4cpp::Priority::ERROR);
 	if (console)logger->addAppender(console);
+
+	logger->notice("Connection\n");
 
 	/* validate connection information and enable functor_function */
 	if (ctx != NULL) {
-		logger->info("Connection[%d]\n",modbus_get_socket(ctx));
+		logger->info("MBSocket[%d]\n",modbus_get_socket(ctx));
 		p_ctx = ctx;
 		m_connection_running = true;
 	} else {
@@ -69,11 +71,13 @@ Connection::Connection(modbus_t *ctx) :
 }
 
 Connection::~Connection() {
-	logger->info("~Connection\n");
+	logger->notice("~Connection\n");
 	/* Connection closed by the client or error */
 	m_connection_running = false;
 	if(p_ctx){
+		logger->info("~MBSocket[%d]\n",modbus_get_socket(p_ctx));
 		modbus_close(p_ctx);
+		modbus_free(p_ctx);
 		p_ctx = NULL;
 	}
 }
@@ -101,7 +105,8 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	cur_address = address;
 	std::map<uint16_t,shared_ptr<MB_Framework::MBHandlerInt> > *cur_handlerlist = NULL;
 
-	logger->debug("function[0x%x]", function);
+	logger->info("function[0x%x]", function);
+	logger->info("address[0x%x]", address);
 	/* get data count */
 	switch (function) {
 	case _FC_READ_INPUT_REGISTERS:
@@ -130,11 +135,11 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 		break;
 	}
 
-	logger->debug("count[0x%x]", count);
+	logger->info("count[0x%x]", count);
 
 	/* loop over handlerlist */
 	while (cur_address < (address + count)) {
-		logger->debug("find handler[0x%x]", cur_address);
+		logger->debug("search handler[0x%x]", cur_address);
 		logger->debug("handler size: %i", cur_handlerlist->size());
 
 		if (cur_handlerlist->size() > 0) {
@@ -157,7 +162,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 						continue;
 					} else {
 						//handler error -> exception
-						logger->error("handler error: modbus_reply_exception");
+						logger->warn("no handler result: modbus_reply_exception");
 						return false;
 						break;
 					}
@@ -173,7 +178,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 						continue;
 					} else {
 						//handler error -> exception
-						logger->error("handler error: modbus_reply_exception");
+						logger->warn("no handler result: modbus_reply_exception");
 						return false;
 						break;
 					}
@@ -188,7 +193,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 						continue;
 					} else {
 						//handler error -> exception
-						logger->error("handler error: modbus_reply_exception");
+						logger->warn("no handler result: modbus_reply_exception");
 						return false;
 						break;
 					}
@@ -199,13 +204,13 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 				}
 			} else {
 				//no handler found -> exception
-				logger->error("no handler found: modbus_reply_exception");
+				logger->warn("no handler found: modbus_reply_exception");
 				return false;
 				break;
 			}
 		} else {
 			//no handler found -> exception
-			logger->error("empty handlerlist: modbus_reply_exception");
+			logger->warn("empty handlerlist: modbus_reply_exception");
 			return false;
 			break;
 		}
@@ -213,6 +218,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	return true;
 }
 void Connection::ConnFunctor::functor_function(void) {
+	CONNECTION_H_NS::shared_ptr<Connection> tmp_conn;
 	uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
 	int rc; /* mb return code */
 
@@ -223,19 +229,22 @@ void Connection::ConnFunctor::functor_function(void) {
 	uint8_t function;
 
 	
-	if(!p_conn.get()){
-	 p_conn->logger->error("functor_function: p_conn failure\n");
+	if(! (( tmp_conn = wp_conn.lock() )) ){
+	    tmp_conn->logger->error("functor_function: wp_conn failure\n");
 	  return;								//check existence of parent class
 	}
-	p_ctx = p_conn->getConnInfo();
-	if(p_ctx == NULL)return;
+	p_ctx = tmp_conn->getConnInfo();
+	if(p_ctx == NULL){
+	    tmp_conn->logger->error("functor_function: p_ctx failure\n");
+	    return;
+	}
 
 	/* Watch stdin (fd 0) to see when it has input. */
 
-	p_conn->logger->debug("functor_function\n");
+	tmp_conn->logger->debug("functor_function\n");
 
 	rc = modbus_receive(p_ctx, query); /* receive mobus tcp query */
-	p_conn->logger->debug("modbus_receive:%i", rc);
+	tmp_conn->logger->debug("modbus_receive[%d]:%i",modbus_get_socket(p_ctx), rc);
 
 	if (rc != -1) {
 
@@ -244,15 +253,15 @@ void Connection::ConnFunctor::functor_function(void) {
 		slave = query[offset - 1];				//get slaveID
 		function = query[offset];				//get mb function code
 
-		p_conn->logger->debug("query[slave]:0x%x", slave);
-		p_conn->logger->debug("query[function]:0x%x", function);
+		tmp_conn->logger->info("query[slave]:0x%x", slave);
+		tmp_conn->logger->debug("query[function]:0x%x", function);
 		{
 			///lock list access @todo use shared lock
 			//std::lock_guard<std::mutex> lock(*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex().get()));
 
 			shared_ptr<VirtualRTUSlave> tmp_slave =
 					dynamic_pointer_cast<VirtualRTUSlave>(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave));
-			p_conn->logger->debug("slave[0x%x]:0x%x", slave, tmp_slave.get());
+			tmp_conn->logger->debug("slave[0x%x]:0x%x", slave, tmp_slave.get());
 
 
 
@@ -264,9 +273,9 @@ void Connection::ConnFunctor::functor_function(void) {
 					 * read operations
 					 * -> handle ReadAccess by handleQuery
 					 */
-					if (p_conn->handleQuery(query, tmp_slave, handleReadAccess)) {
+					if (tmp_conn->handleQuery(query, tmp_slave, handleReadAccess)) {
 						rc = modbus_reply(p_ctx, query, rc,	tmp_slave->getMappingDB());
-						p_conn->logger->debug("modbus_reply[%d;0x%x]:%d", modbus_get_socket(p_ctx),
+						tmp_conn->logger->debug("modbus_reply[%d;0x%x]:%d", modbus_get_socket(p_ctx),
 								tmp_slave->getMappingDB(), rc);
 					} else {
 						modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
@@ -280,11 +289,11 @@ void Connection::ConnFunctor::functor_function(void) {
 					 *  -> extract data from query by modbus library to database
 					 *  -> handle writeAccess by handleQuery(ThreadPool ?)
 					 */
-					if (p_conn->handleQuery(query, tmp_slave, checkWriteAccess)) {
+					if (tmp_conn->handleQuery(query, tmp_slave, checkWriteAccess)) {
 						rc = modbus_reply(p_ctx, query, rc,tmp_slave->getMappingDB());
-						p_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", modbus_get_socket(p_ctx),
+						tmp_conn->logger->debug("modbus_reply[0x%x;0x%x]:0x%x", modbus_get_socket(p_ctx),
 								tmp_slave->getMappingDB(), rc);
-						p_conn->handleQuery(query, tmp_slave, handleWriteAccess);
+						tmp_conn->handleQuery(query, tmp_slave, handleWriteAccess);
 					} else {
 						modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 					}
@@ -302,15 +311,15 @@ void Connection::ConnFunctor::functor_function(void) {
 					break;
 				}
 			} else {
-				p_conn->logger->error("slave not registred: modbus_reply_exception");
+				tmp_conn->logger->warn("slave not registred: modbus_reply_exception");
 				modbus_reply_exception(p_ctx, query, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 
 			}
 		}
 
-		p_conn->setStatus(open);
+		tmp_conn->setStatus(open);
 	} else {
-		p_conn->setStatus(closed);
+		tmp_conn->setStatus(closed);
 	}
 }
 

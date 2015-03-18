@@ -237,7 +237,7 @@ void printIOBoardSlave(uint8_t address) {
 	uint16_t value[32];
 	uint8_t pincount;
 
-	printf("printIOBoardSlave\n");
+	printf("printIOBoardSlave[%x]\n",address);
 
 	if (mb != NULL) {
 		modbus_set_slave(mb, address);
@@ -249,8 +249,10 @@ void printIOBoardSlave(uint8_t address) {
 
 
 			if(vm.count("p_slaveID")>0){
-				printf("[%i]\tSlaveID:\t\t 0x%x\n", 0, value[0]);
+				printf("[%i]\tSlaveID:\t\t0x%x\n", 0, value[0]);
 			}
+		} else {
+			printf("Cannot read slaveID\n");
 		}
 		//get Version
 		if(vm.count("p_version")>0){
@@ -258,10 +260,13 @@ void printIOBoardSlave(uint8_t address) {
 				((VERSION_LENGTH / 2) + (VERSION_LENGTH % 2)), value);
 			value[ret < 32 ? ret : 31] = '\0';
 			if (ret > 0){
-				printf("[%i]\tVersion:\t\t\n", VERSION_START / 2);
+				printf("[%i]\tVersion:\t\t", VERSION_START / 2);
 				for(int i=0;i<ret;i++){
 					printf("%c%c", (char)(value[i] >> 8), (char)(value[i] & 0xFF));
 				}
+				printf("\n");
+			} else {
+				printf("Cannot read Version\n");
 			}
 		}
 
@@ -270,7 +275,7 @@ void printIOBoardSlave(uint8_t address) {
 		if (ret > 0) {
 			pincount = value[0] & 0xFF;
 			if(vm.count("p_count")>0){
-				printf("[%i]\tvirt. IO count:\t\t 0x%x\n", VIRTUAL_IO_COUNT / 2,pincount);
+				printf("[%i]\tvirt. IO count:\t\t0x%x\n", VIRTUAL_IO_COUNT / 2,pincount);
 			}
 		}
 
@@ -280,19 +285,21 @@ void printIOBoardSlave(uint8_t address) {
 				(pincount / 8) + ((pincount % 8) > 0 ? 1 : 0), value);
 
 			for (int i = 0; i < ret; i++) {
-				printf("[%i]\tvirt. IO port[0x%x]:\t 0x%x\n",
-						(VIRTUAL_IO_START / 2) + i, i, value[i]);
+				printf("[%i]\tvirt. IO port[0x%x]:\t0x%04X\n",(VIRTUAL_IO_START / 2) + i, i, htobe16(value[i]));
 			}
 		}
 		/// add all tmp data handler
 		if(vm.count("p_tmp")>0){
 			for (int i = 0; i < pincount; i++) {
 				uint16_t handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
-				ret = modbus_read_registers(mb, handler_address, 2, value);
+				ret = modbus_read_registers(mb, handler_address, VIRTUAL_DATA_LENGTH/2, value);
 				if (ret > 0){
 
-						printf("[%i]\ttmp_data[0x%x]:\t\t 0x%x\n", handler_address, i,
-							value[i] & 0xFF);
+					printf("[%i]\ttmp_data[0x%x]:\t\t", handler_address, i);
+					for (int i = 0; i < ret; i++) {
+						printf("0x%02X 0x%02X ",value[i] >> 8, value[i] & 0xFF);
+					}
+					printf("\n");
 				}
 			}
 		}
@@ -302,8 +309,7 @@ void printIOBoardSlave(uint8_t address) {
 			//get I2C Addi
 			ret = modbus_read_registers(mb, I2C_BUFFER_SIZE / 2, 1, value);
 			if (ret > 0) {
-				printf("[%i]\tI2C Addr:\t\t 0x%x\n", I2C_BUFFER_SIZE / 2,
-						value[0]);
+				printf("[%i]\tI2C Addr:\t\t0x%04x\n", I2C_BUFFER_SIZE / 2, htobe16(value[0]));
 
 			}
 		}
@@ -312,10 +318,13 @@ void printIOBoardSlave(uint8_t address) {
 			for (int i = 0; i < pincount; i++) {
 				uint16_t handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START)
 						/ 2) + (i * 2);
-				ret = modbus_read_registers(mb, handler_address, 2, value);
+				ret = modbus_read_registers(mb, handler_address, EEPROM_DATA_LENGTH/2, value);
 				if (ret > 0){
-					printf("[%i]\tperm_data[0x%x]:\t\t 0x%x\n", handler_address, i,
-							value[i] & 0xFF);
+					printf("[%i]\tperm_data[0x%x]:\t\t", handler_address, i);
+					for (int i = 0; i < ret; i++) {
+						printf("0x%02X 0x%02X ",value[i] >> 8, value[i] & 0xFF);
+					}
+					printf("\n");
 				}
 			}
 		}
@@ -327,8 +336,7 @@ void printIOBoardSlave(uint8_t address) {
 						+ (EEPROM_FUNC_START / 2) + i;
 				ret = modbus_read_registers(mb, handler_address, 1, value);
 				if (ret > 0) {
-					printf("[%i]\tFunc[0x%x;0x%x]:\t\t 0x%x ", handler_address,
-							i / 8, i % 8, value[0] & 0xFF);
+					printf("[%i]\tFunc[0x%x;0x%x]:\t\t 0x%x ", handler_address,	i / 8, i % 8, value[0] & 0xFF);
 
 					switch (value[0] & 0xff) {
 					case PIN_DISABLED:
@@ -353,10 +361,10 @@ void printIOBoardSlave(uint8_t address) {
 						printf("uart \n");
 						break;
 					case PIN_OW_POWER_PARASITE:
-						printf("1-wire \n");
+						printf("1-wire (parasite) \n");
 						break;
 					case PIN_OW_POWER_EXTERN:
-						printf("1-wire \n");
+						printf("1-wire (extpwer)\n");
 						break;
 					case PIN_ADC:
 						printf("adc \n");
@@ -379,11 +387,12 @@ void printIOBoardSlave(uint8_t address) {
 				printf("[%i]:\t", handler_address);
 				if (ret > 0) {
 					value[ret] = '\0';
-					printf("Name:\t \n");
+					printf("Name:\t");
 
 					for(int i=0;i<ret;i++){
 						printf("%c%c", (char)(value[i] >> 8), (char)(value[i] & 0xFF));
 					}
+					printf("\n");
 				} else {
 					printf("no name\n");
 				}

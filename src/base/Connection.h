@@ -67,12 +67,13 @@ class Connection:
 	class ConnFunctor:
 		public icke2063::threadpool::Functor{
 	public:
-		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):p_conn(conn){}
+		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):
+		    wp_conn(conn){}
 		virtual ~ConnFunctor(){}
 
 	private:
 		virtual void functor_function(void);
-		CONNECTION_H_NS::shared_ptr<Connection> p_conn;
+		CONNECTION_H_NS::weak_ptr<Connection> wp_conn;
 	};
 
 	friend class ConnFunctor;	//ok lets play together ;-)
