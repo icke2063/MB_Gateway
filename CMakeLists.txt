@@ -26,9 +26,6 @@ else()
   SET(ICKE2063_CRUMBY_NO_CPP11 1)
 endif()
 
-
-include_directories(/usr/include)
-
 add_subdirectory (common_cpp)
 
 #default includes
