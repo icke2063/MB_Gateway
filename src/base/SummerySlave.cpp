@@ -23,20 +23,20 @@ using namespace std;
 using namespace boost;
 #endif
 
+#include <crumby_logging_macros.h>
+
 namespace icke2063 {
 namespace MB_Gateway {
 
 SummerySlave::SummerySlave(shared_ptr<threadpool::ThreadPool> delayed_pool, uint8_t SlaveAddr, unsigned int timeout) :
 		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true), m_timeout(timeout),m_delayed_pool(delayed_pool){
-	logger = &log4cpp::Category::getInstance(std::string("SummerySlave"));
-	logger->setPriority(log4cpp::Priority::ERROR);
-	//if (console)logger->addAppender(console);
 
-	logger->info("SummerySlave@%i",SlaveAddr);
-	logger->debug("m_timeout: %d",m_timeout);
 	
-	logger->debug("delayed_pool: 0x%x",delayed_pool.get());
-	logger->debug("m_delayed_pool: 0x%x",m_delayed_pool.get());
+	crumby_INFO_WRITE("SummerySlave@%i",SlaveAddr);
+	crumby_DEBUG_WRITE("m_timeout: %d",m_timeout);
+
+	crumby_DEBUG_WRITE("delayed_pool: 0x%x",delayed_pool.get());
+	crumby_DEBUG_WRITE("m_delayed_pool: 0x%x",m_delayed_pool.get());
 	
 
 	init();
@@ -46,15 +46,15 @@ SummerySlave::SummerySlave(shared_ptr<threadpool::ThreadPool> delayed_pool, uint
 }
 
 SummerySlave::~SummerySlave() {
-	logger->info("SummerySlave");
+	crumby_INFO_WRITE("SummerySlave");
 	m_running = false;
 	m_Condition.notify_all();
 	//if(p_scanner_thread.get() && p_scanner_thread->joinable())p_scanner_thread->join();
 }
 void SummerySlave::startFunctor(void){
-  logger->info("SummerySlave::startFunctor\n");
+  crumby_INFO_WRITE("SummerySlave::startFunctor\n");
 if(m_delayed_pool.get()){
-    logger->info("addFunctor\n");
+    crumby_INFO_WRITE("addFunctor\n");
   struct timeval now;
   gettimeofday(&now,NULL);
   m_delayed_pool->delegateDelayedFunctor( shared_ptr<threadpool::DelayedFunctorInt>( new threadpool::DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
@@ -72,7 +72,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 	}
 	
 	shared_ptr<MBVirtualRTUSlave> curSlave;
-	m_slave->logger->debug("Summery Thread");
+	crumby_DEBUG_WRITE("Summery Thread");
 
 	if (m_slave->m_running) {
 		//p_scanner_thread->yield();
@@ -80,8 +80,8 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 
 		if (m_slave->m_Condition.wait_for(lock,
 				chrono::milliseconds(m_slave->m_timeout)) == cv_status::timeout ) {
-			m_slave->logger->debug("scan slaves...");
-			m_slave->logger->debug("slavelist size: %d",boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size());
+			crumby_DEBUG_WRITE("scan slaves...");
+			crumby_DEBUG_WRITE("slavelist size: %d",boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size());
 
 			slave=0;
 			/* loop over all detected slaves and insert data into list */
@@ -98,7 +98,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 				slave++;
 			}while(slave<255);
 
-			m_slave->logger->debug("scan finished");
+			crumby_DEBUG_WRITE("scan finished");
 			
 			/* some information about threadpool */
 			if(m_slave->m_delayed_pool.get()){
@@ -110,7 +110,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 			}
 
 		} else {
-			m_slave->logger->debug("exit thread");
+			crumby_DEBUG_WRITE("exit thread");
 			return;
 		}
 		  struct timeval now;
@@ -131,7 +131,7 @@ bool SummerySlave::init(void) {
 	 * data register (byte_count byte)
 	 */
 
-	logger->info("init");
+	crumby_INFO_WRITE("init");
 
 	m_mapping = modbus_mapping_new(0, 0, 0, DEFAULT_SUMMERY_COUNT+10);
 
@@ -164,7 +164,7 @@ bool SummerySlave::init(void) {
 	  m_input_handlerlist[DEFAULT_SUMMERY_COUNT+i] = Multi;
 	}
 	
-	logger->debug("init finished");
+	crumby_DEBUG_WRITE("init finished");
 	return true;
 }
 } /* namespace MB_Gateway */

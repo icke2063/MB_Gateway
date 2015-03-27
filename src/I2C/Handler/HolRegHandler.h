@@ -20,7 +20,7 @@ class HolRegHandler: public MultiByteHandler {
 public:
 	HolRegHandler(enum address_mode mode = _8bit) :
 		MultiByteHandler(mode) {
-		logger->info("HolRegHandler");
+		i2c_INFO_WRITE("HolRegHandler");
 		enableReadInpReg = false;
 	}
 	virtual ~HolRegHandler() {

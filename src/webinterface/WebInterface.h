@@ -26,13 +26,11 @@
 
 #include <tnt/tntnet.h>
 
-//own lib
-#include <Logger.h>
-
 namespace icke2063 {
 namespace MB_Gateway {
 
-class WebInterface : public common_cpp::Logger{
+class WebInterface
+{
 public:
 	WebInterface(uint16_t port=8000);
 	virtual ~WebInterface();

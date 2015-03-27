@@ -22,7 +22,6 @@
 
 #include <VirtualRTUSlave.h>
 #include <MultiByteHandler.h>
-#include <Logger.h>
 
 #define SLAVE_TYPE_I2C	0x10
 
@@ -30,19 +29,16 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-class I2C_Slave: public VirtualRTUSlave, public common_cpp::Logger {
+class I2C_Slave: public VirtualRTUSlave
+{
 public:
 	I2C_Slave(uint8_t SlaveAddr) :
 			VirtualRTUSlave(SlaveAddr) {
-		logger = &log4cpp::Category::getInstance(std::string("I2C_Slave"));
-		logger->setPriority(log4cpp::Priority::DEBUG);
-		if (console)
-			logger->addAppender(console);
 
-		logger->info("I2C_Slave[0x%x]", getSlaveAddr());
+		i2c_INFO_WRITE("I2C_Slave[0x%x]", getSlaveAddr());
 
 		m_mapping = modbus_mapping_new(0, 0, 128, 0);
-		logger->debug("m_mapping:%x", m_mapping);
+		i2c_DEBUG_WRITE("m_mapping:%x", m_mapping);
 
 		//init();
 	}
@@ -54,7 +50,7 @@ public:
 
 	virtual bool init(void) {
 		int i;
-		logger->info("init");
+		i2c_INFO_WRITE("init");
 
 		///add handler
 		Multi.reset(new MultiByteHandler()); //virtual IO Port handler
@@ -67,10 +63,10 @@ public:
 		for (i = 0; i < 127; i++) {
 			m_input_handlerlist[i] = Multi;
 			m_holding_handlerlist[i] = Multi;
-			logger->debug("add Multi handler[0x%x]", i);
+			i2c_DEBUG_WRITE("add Multi handler[0x%x]", i);
 		}
 
-		logger->debug("finished");
+		i2c_DEBUG_WRITE("finished");
 		return true;
 	}
 

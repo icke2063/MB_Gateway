@@ -12,8 +12,9 @@
 
 #include <handler/DefaultHandler.h>
 
-#include <Logger.h>
 #include "modbus/modbus.h"
+
+#include <i2c_logging_macros.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
@@ -28,7 +29,7 @@ class MultiByteHandler:
 public:
 	MultiByteHandler(enum address_mode mode = _8bit, int16_t byte_count = -1) :
 			m_mode(mode), m_byte_count(byte_count) {
-		logger->info("MultiByteHandler");
+		i2c_INFO_WRITE("MultiByteHandler");
 	}
 	virtual ~MultiByteHandler() {
 	}

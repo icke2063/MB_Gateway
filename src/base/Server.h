@@ -45,7 +45,6 @@
 
 //MB_Framework
 #include <MBServer.h>
-#include <Logger.h>
 #include <ThreadPool.h>
 
 
@@ -53,8 +52,7 @@ namespace icke2063 {
 namespace MB_Gateway {
 
 class Server :
-	public icke2063::MB_Framework::MBServer,
-	public icke2063::common_cpp::Logger{
+	public icke2063::MB_Framework::MBServer {
 public:
 	Server(uint16_t port, SERVER_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> ext_pool);
 	virtual ~Server();

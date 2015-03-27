@@ -33,10 +33,15 @@
 #include <SummerySlave.h>
 
 #include <WebInterface.h>
-//#include <MBVirtualRTUSlave.h>
+
 using namespace icke2063::MB_Framework;
 
 #include <ThreadPool.h>
+
+#include <crumby_logging_macros.h>
+#include <modbus_logging_macros.h>
+#include <threadpool_logging_macros.h>
+#include <i2c_logging_macros.h>
 
 
 #ifdef I2C_SUPPORT
@@ -45,15 +50,31 @@ using namespace icke2063::MB_Framework;
 
 using namespace icke2063::MB_Gateway;
 
-int main() {
+void crumby_logfn(uint8_t loglevel, const char *file, const int line, const char *fn, const char *format, va_list args)
+{
+	printf(format, args);
+	printf("\n");
+}
+
+int main()
+{
+	crumby_SET_LOG_FN(crumby_logfn);
+	modbus_SET_LOG_FN(crumby_logfn);
+	threadpool_SET_LOG_FN(crumby_logfn);
+	i2c_SET_LOG_FN(crumby_logfn);
+
+
+//	crumby_SET_LOG_LEVEL(LOG_INFO);
+//	modbus_SET_LOG_LEVEL(LOG_INFO);
+//	threadpool_SET_LOG_LEVEL(LOG_INFO);
+//	i2c_SET_LOG_LEVEL(LOG_INFO);
+
 
 	shared_ptr<icke2063::threadpool::ThreadPool> pool(new icke2063::threadpool::ThreadPool(5));
 	pool->setHighWatermark(10);
 	pool->setLowWatermark(3);
 	
-
-
-	std::auto_ptr<Server> default_server(new Server(1502,pool));
+	std::auto_ptr<Server> default_server(new Server(502,pool));
 	  
 
 	//	unique_ptr<Server> custom_server;

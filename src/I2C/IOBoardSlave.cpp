@@ -30,13 +30,15 @@
 
 using namespace IOBOARDSLAVE_H_NS;
 
+#include <modbus_logging_macros.h>
+
 namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
 VersionHandler::VersionHandler() :
 		MultiByteHandler(_16bit, -1) {
-	logger->info("VersionHandler");
+	modbus_INFO_WRITE("VersionHandler");
 	enableReadInpReg = false; //disable input register access
 }
 
@@ -44,18 +46,18 @@ int VersionHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 
 	uint8_t count = ((VERSION_LENGTH / 2) + (VERSION_LENGTH % 2));
 
-	logger->debug("VersionHandler::handleReadAccess");
+	modbus_DEBUG_WRITE("VersionHandler::handleReadAccess");
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) {
 		/* check for the correct address range */
 		setRange((VERSION_START / 2), ((VERSION_START / 2) + count)-1);
 		if (!checkRange((curHandler->m_address), curHandler->m_count)){
-			logger->error("checkRange: failure");
+			modbus_ERROR_WRITE("checkRange: failure");
 			return 0;
 		}
 		if (curHandler->m_count != count){
-			logger->error("Count to low for correct version readout: %i of %i",curHandler->m_count,count);
+			modbus_ERROR_WRITE("Count to low for correct version readout: %i of %i",curHandler->m_count,count);
 			return 0;
 		}
 		return MultiByteHandler::handleReadAccess(param);
@@ -64,25 +66,25 @@ int VersionHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 }
 
 int DataHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
-	logger->debug("DataHandler::handleReadAccess");
+	modbus_DEBUG_WRITE("DataHandler::handleReadAccess");
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) {
 		//check access alignment
 		if (curHandler->m_address % 2 != 0) {
-			logger->error("address not correct aligned");
+			modbus_ERROR_WRITE("address not correct aligned");
 			return 0; //only even adresses -> alignment 2 register
 		}
 		if (curHandler->m_count % 2) {
-			logger->error("count not correct aligned");
+			modbus_ERROR_WRITE("count not correct aligned");
 			return 0; //only even counts -> alignement 2 register count
 		}
 
 		/* check for the correct address range */
 		if (!checkRange((curHandler->m_address), curHandler->m_count)) {
-			logger->error("range failure");
-			logger->error("Range(0x%x,0x%x)", getRStart(), getRStop());
-			logger->error("checkRange(0x%x,0x%x)", curHandler->m_address,
+			modbus_ERROR_WRITE("range failure");
+			modbus_ERROR_WRITE("Range(0x%x,0x%x)", getRStart(), getRStop());
+			modbus_ERROR_WRITE("checkRange(0x%x,0x%x)", curHandler->m_address,
 					curHandler->m_count);
 			return 0;
 		}
@@ -92,7 +94,7 @@ int DataHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 int DataHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
-	logger->debug("DataHandler::checkWriteAccess");
+	modbus_DEBUG_WRITE("DataHandler::checkWriteAccess");
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) {
@@ -114,19 +116,15 @@ int DataHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 }
 
 IOBoard_Slave::IOBoard_Slave(uint8_t SlaveAddr) :
-		I2C_Slave(SlaveAddr) {
+		I2C_Slave(SlaveAddr)
+{
 
-	logger = &log4cpp::Category::getInstance(std::string("IOBoard_Slave"));
-	logger->setPriority(log4cpp::Priority::DEBUG);
-	if (console)
-		logger->addAppender(console);
-
-	logger->info("IOBoard_Slave[0x%x]", SlaveAddr);
+	modbus_INFO_WRITE("IOBoard_Slave[0x%x]", SlaveAddr);
 
 	if(m_mapping)modbus_mapping_free(m_mapping);
 	m_mapping = modbus_mapping_new(0, 0, (I2C_BUFFER_SIZE + EEPROM_SIZE / 2),
 			0);
-	logger->debug("m_mapping:%x", m_mapping);
+	modbus_DEBUG_WRITE("m_mapping:%x", m_mapping);
 
 	getSlaveInfo();
 }
@@ -145,7 +143,7 @@ bool IOBoard_Slave::init(void) {
 	 */
 	uint8_t recvbuffer[_16bit + 2];
 
-	logger->info("init");
+	modbus_INFO_WRITE("init");
 
 	/*
 	 * get some informations directly from ioboard
@@ -162,9 +160,9 @@ bool IOBoard_Slave::init(void) {
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, 2)) {
 		pincount = recvbuffer[0];
-		logger->info("IOBoard[0x%x] pincount:%i", getSlaveAddr(), pincount);
+		modbus_INFO_WRITE("IOBoard[0x%x] pincount:%i", getSlaveAddr(), pincount);
 	} else {
-		logger->error("IOBoard[0x%x] unable read pincount", getSlaveAddr());
+		modbus_ERROR_WRITE("IOBoard[0x%x] unable read pincount", getSlaveAddr());
 		return false;
 	}
 
@@ -266,7 +264,7 @@ bool IOBoard_Slave::init(void) {
 	for (i = 0; i < pincount; i++) {
 		handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
 		m_holding_handlerlist[handler_address] = TmpData;
-		logger->debug("add TmpData handler[0x%x]", handler_address);
+		modbus_DEBUG_WRITE("add TmpData handler[0x%x]", handler_address);
 	}
 
 	/// eeprom
@@ -276,14 +274,14 @@ bool IOBoard_Slave::init(void) {
 	for (i = 0; i < pincount; i++) {
 		handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2) + (i * 2);
 		m_holding_handlerlist[handler_address] = PermData;
-		logger->debug("add PermData handler[0x%x]", handler_address);
+		modbus_DEBUG_WRITE("add PermData handler[0x%x]", handler_address);
 	}
 
 	/// add all function handler
 	for (i = 0; i < pincount; i++) {
 		handler_address = (I2C_BUFFER_SIZE / 2) + (EEPROM_FUNC_START / 2) + i;
 		m_holding_handlerlist[handler_address] = Holding; /// add all function
-		logger->debug("add function handler[0x%x]", handler_address);
+		modbus_DEBUG_WRITE("add function handler[0x%x]", handler_address);
 	}
 
 	/// add all name handler
@@ -292,11 +290,11 @@ bool IOBoard_Slave::init(void) {
 			handler_address = ((I2C_BUFFER_SIZE + EEPROM_NAME_START) / 2)
 					+ (i * (IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2) + e);
 			m_holding_handlerlist[handler_address] = Holding;
-			logger->debug("add name[%i] handler[0x%x]", i, handler_address);
+			modbus_DEBUG_WRITE("add name[%i] handler[0x%x]", i, handler_address);
 		}
 	}
 
-	logger->debug("finished");
+	modbus_DEBUG_WRITE("finished");
 	return true;
 }
 
@@ -309,7 +307,7 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	 */
 	uint8_t recvbuffer[_16bit + 0x20];
 
-	logger->info("getSlaveInfo");
+	modbus_INFO_WRITE("getSlaveInfo");
 
 	/*
 	 * get some informations directly from ioboard
@@ -323,13 +321,13 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, 2)) {
-		logger->info("IOBoard[0x%x]SlaveID:0x%x", getSlaveAddr(), recvbuffer[0]);
+		modbus_INFO_WRITE("IOBoard[0x%x]SlaveID:0x%x", getSlaveAddr(), recvbuffer[0]);
 
 		if(m_mapping){
 			memcpy(m_mapping->tab_registers,recvbuffer,2);	//store in DB
 		}
 	} else {
-		logger->error("IOBoard[0x%x] unable read SlaveID", getSlaveAddr());
+		modbus_ERROR_WRITE("IOBoard[0x%x] unable read SlaveID", getSlaveAddr());
 	}
 
 	/* get Version */
@@ -343,10 +341,10 @@ void IOBoard_Slave::getSlaveInfo(void) {
 
 		if(m_mapping){
 			memcpy(&m_mapping->tab_registers[VERSION_START/2],recvbuffer,VERSION_LENGTH);	//store in DB
-			logger->info("IOBoard[0x%x]Version:%s", getSlaveAddr(), &m_mapping->tab_registers[VERSION_START/2]);
+			modbus_INFO_WRITE("IOBoard[0x%x]Version:%s", getSlaveAddr(), &m_mapping->tab_registers[VERSION_START/2]);
 		}
 	} else {
-		logger->error("IOBoard[0x%x] unable read version", getSlaveAddr());
+		modbus_ERROR_WRITE("IOBoard[0x%x] unable read version", getSlaveAddr());
 	}
 
 	/* get virtual pin count */
@@ -359,17 +357,17 @@ void IOBoard_Slave::getSlaveInfo(void) {
 		pincount = recvbuffer[0];
 		if(m_mapping){
 			memcpy(&m_mapping->tab_registers[VIRTUAL_IO_COUNT/2],recvbuffer,2);	//store in DB
-			logger->info("IOBoard[0x%x] pincount:%i", getSlaveAddr(), m_mapping->tab_registers[VIRTUAL_IO_COUNT/2]);
+			modbus_INFO_WRITE("IOBoard[0x%x] pincount:%i", getSlaveAddr(), m_mapping->tab_registers[VIRTUAL_IO_COUNT/2]);
 		}
 	} else {
-		logger->error("IOBoard[0x%x] unable read pincount", getSlaveAddr());
+		modbus_ERROR_WRITE("IOBoard[0x%x] unable read pincount", getSlaveAddr());
 	}
 
 	/* get virtual pin functions */
 	i2c_address = ((I2C_BUFFER_SIZE) + (EEPROM_FUNC_START));
 	recvbuffer[0] = ( i2c_address >> 8); //first high
 	recvbuffer[1] = ( i2c_address & 0xff); //second low
-	logger->debug("read function codes[0x%x]", i2c_address);
+	modbus_DEBUG_WRITE("read function codes[0x%x]", i2c_address);
 	// read data from i2c bus
 	if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, pincount * 2)) {
@@ -377,12 +375,12 @@ void IOBoard_Slave::getSlaveInfo(void) {
 		if(m_mapping){	// write values into DB
 			memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,pincount * 2);	//store in DB
 			for (i = 0; i < pincount; i++) {
-				logger->info("function[%i]:0x%x", (i2c_address/2)+(i*2), m_mapping->tab_registers[(i2c_address/2)+(i*2)]);
+				modbus_INFO_WRITE("function[%i]:0x%x", (i2c_address/2)+(i*2), m_mapping->tab_registers[(i2c_address/2)+(i*2)]);
 			}
 		}
 	} else {
-		logger->debug("IOBoard[0x%x] unable read func codes", getSlaveAddr());
-		logger->error("IOBoard[0x%x] unable read func codes", getSlaveAddr());
+		modbus_DEBUG_WRITE("IOBoard[0x%x] unable read func codes", getSlaveAddr());
+		modbus_ERROR_WRITE("IOBoard[0x%x] unable read func codes", getSlaveAddr());
 	}
 
 	/* get virtual pin names */
@@ -391,7 +389,7 @@ void IOBoard_Slave::getSlaveInfo(void) {
 		// get virtual pin names
 		recvbuffer[0] = (i2c_address >> 8); //first high
 		recvbuffer[1] = (i2c_address & 0xff); //second low
-		logger->debug("name[%i]:0x%x", i, i2c_address);
+		modbus_DEBUG_WRITE("name[%i]:0x%x", i, i2c_address);
 		// read data from i2c bus
 		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
 				getSlaveAddr(), recvbuffer, _16bit, IO_BOARD_MAX_IO_PIN_NAME_LENGTH)) {
@@ -399,11 +397,11 @@ void IOBoard_Slave::getSlaveInfo(void) {
 
 			if(m_mapping){
 				memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,IO_BOARD_MAX_IO_PIN_NAME_LENGTH);	//store in DB
-				logger->info("name[%i]:%s", i, recvbuffer);
+				modbus_INFO_WRITE("name[%i]:%s", i, recvbuffer);
 			}
 		} else {
-			logger->debug("IOBoard[0x%x] unable read names", getSlaveAddr());
-			logger->error("IOBoard[0x%x] unable read names", getSlaveAddr());
+			modbus_DEBUG_WRITE("IOBoard[0x%x] unable read names", getSlaveAddr());
+			modbus_ERROR_WRITE("IOBoard[0x%x] unable read names", getSlaveAddr());
 		}//if(I2C)
 	}//for(names)
 }

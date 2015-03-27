@@ -32,8 +32,6 @@
 #define MAX_SCAN_FAIL 5
 
 //own lib
-#include <Logger.h>
-
 #include <I2CSlave.h>
 
 #define DEFAULT_SCAN_TIMEOUT_MS	1000
@@ -42,7 +40,8 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-class I2C_Scanner: public common_cpp::Logger {
+class I2C_Scanner
+{
 public:
 	I2C_Scanner(unsigned int timeout = DEFAULT_SCAN_TIMEOUT_MS);
 	virtual ~I2C_Scanner();

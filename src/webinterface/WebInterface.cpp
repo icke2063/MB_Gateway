@@ -15,15 +15,14 @@ using namespace std;
 using namespace boost;
 #endif
 
+#include <crumby_logging_macros.h>
+
 namespace icke2063 {
 namespace MB_Gateway {
 
 WebInterface::WebInterface(uint16_t port):m_port(port) {
-	logger = &log4cpp::Category::getInstance(std::string("SummerySlave"));
-	logger->setPriority(log4cpp::Priority::DEBUG);
-	//if (console)logger->addAppender(console);
 
-	logger->info("WebInterface@%i",m_port);
+	crumby_INFO_WRITE("WebInterface@%i",m_port);
 
 	p_server_thread.reset(new thread(&WebInterface::thread_function, this)); // create new scheduler thread
 

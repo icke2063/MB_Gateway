@@ -20,54 +20,54 @@ int MultiRegisterHandler::handleReadAccess(icke2063::MB_Framework::MBHandlerPara
 	uint16_t address;
 	uint16_t register_count;
 
-	logger->debug("MultiRegisterHandler::handleReadAccess");
+	modbus_DEBUG_WRITE("MultiRegisterHandler::handleReadAccess");
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) { //got correct param object pointer
-		logger->debug("HandlerParam ok");
+		modbus_DEBUG_WRITE("HandlerParam ok");
 
 		address = curHandler->m_address;
 
-		logger->debug("slave:%i", curHandler->m_slave);
-		logger->debug("function:%i", curHandler->m_function);
+		modbus_DEBUG_WRITE("slave:%i", curHandler->m_slave);
+		modbus_DEBUG_WRITE("function:%i", curHandler->m_function);
 
-		logger->debug("p_mb_mapping:0x%x", curHandler->p_mb_mapping);
-		logger->debug("address:%i", address);
+		modbus_DEBUG_WRITE("p_mb_mapping:0x%x", curHandler->p_mb_mapping);
+		modbus_DEBUG_WRITE("address:%i", address);
 
 		if (m_register_count < 0)
 			register_count = curHandler->m_count;
 		else
 			register_count = m_register_count;
 
-		logger->debug("count:%i", curHandler->m_count);
-		logger->debug("register_count:%i", register_count);
+		modbus_DEBUG_WRITE("count:%i", curHandler->m_count);
+		modbus_DEBUG_WRITE("register_count:%i", register_count);
 
 		//check FC support and storage size
 		switch (curHandler->m_function) {
 		case _FC_READ_INPUT_REGISTERS: //FC 03:read holding register
 			if (!enableReadInpReg) {
-				logger->error("enableReadInpReg: false");
+				modbus_ERROR_WRITE("enableReadInpReg: false");
 				return 0;
 			}
 			if ((address + register_count)
 					> curHandler->p_mb_mapping->nb_input_registers) {
-				logger->error("mapping size failure");
+				modbus_ERROR_WRITE("mapping size failure");
 				return 0;
 			}
 			break;
 		case _FC_READ_HOLDING_REGISTERS: //FC 04:read input register
 			if (!enableReadHolReg) {
-				logger->error("enableReadHolReg: false");
+				modbus_ERROR_WRITE("enableReadHolReg: false");
 				return 0;
 			}
 			if ((address + register_count)
 					> curHandler->p_mb_mapping->nb_registers) {
-				logger->error("mapping size failure");
+				modbus_ERROR_WRITE("mapping size failure");
 				return 0;
 			}
 			break;
 		default: //not supported FC in this handler
-			logger->error("not supported FC");
+			modbus_ERROR_WRITE("not supported FC");
 			return 0;
 		}
 
@@ -100,7 +100,7 @@ int MultiRegisterHandler::handleWriteAccess(icke2063::MB_Framework::MBHandlerPar
 	uint16_t address;
 	uint16_t register_count;
 
-	logger->debug("MultiByteHandler::handleWriteAccess");
+	modbus_DEBUG_WRITE("MultiByteHandler::handleWriteAccess");
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) { //got correct param object pointer
 		if (m_register_count < 0)
@@ -111,13 +111,13 @@ int MultiRegisterHandler::handleWriteAccess(icke2063::MB_Framework::MBHandlerPar
 		slave = curHandler->m_slave;
 		address = curHandler->m_address;
 
-		logger->debug("slave:%i", slave);
-		logger->debug("function:%i", curHandler->m_function);
-		logger->debug("count:%i", curHandler->m_count);
-		logger->debug("register_count:%i", register_count);
-		logger->debug("address:%i", address);
+		modbus_DEBUG_WRITE("slave:%i", slave);
+		modbus_DEBUG_WRITE("function:%i", curHandler->m_function);
+		modbus_DEBUG_WRITE("count:%i", curHandler->m_count);
+		modbus_DEBUG_WRITE("register_count:%i", register_count);
+		modbus_DEBUG_WRITE("address:%i", address);
 
-		logger->debug("p_mb_mapping:%x", curHandler->p_mb_mapping);
+		modbus_DEBUG_WRITE("p_mb_mapping:%x", curHandler->p_mb_mapping);
 
 		switch (curHandler->m_function) {
 		case _FC_WRITE_SINGLE_REGISTER: //FC 06:write single holding register
@@ -149,7 +149,7 @@ int MultiRegisterHandler::handleWriteAccess(icke2063::MB_Framework::MBHandlerPar
 int MultiRegisterHandler::checkWriteAccess(icke2063::MB_Framework::MBHandlerParam *param) {
 	uint16_t register_count;
 
-	logger->debug("MultiRegisterHandler::checkWriteAccess");
+	modbus_DEBUG_WRITE("MultiRegisterHandler::checkWriteAccess");
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) { //got correct param object pointer
 		if (m_register_count < 0)

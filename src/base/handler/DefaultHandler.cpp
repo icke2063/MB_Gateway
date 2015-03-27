@@ -12,10 +12,6 @@
 namespace icke2063 {
 namespace MB_Gateway {
 
-DefaultHandler::DefaultHandler() {
-	logger = &log4cpp::Category::getInstance(std::string("DefaultHandler"));
-	logger->setPriority(log4cpp::Priority::DEBUG);
-	//if (console)logger->addAppender(console);
-}
+DefaultHandler::DefaultHandler() {}
 } /* namespace MB_Gateway */
 } /* namespace icke2063 */

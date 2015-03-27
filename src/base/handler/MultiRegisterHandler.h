@@ -13,6 +13,7 @@
 #include "DefaultHandler.h"
 
 #include "modbus/modbus.h"
+#include <modbus_logging_macros.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
@@ -21,7 +22,7 @@ class MultiRegisterHandler: public MB_Gateway::DefaultHandler {
 public:
 	MultiRegisterHandler(modbus_mapping_t * pmap = NULL, int16_t count = -1) :
 			p_mb_mapping(pmap), m_register_count(count) {
-		logger->info("MultiRegisterHandler");
+		modbus_INFO_WRITE("MultiRegisterHandler");
 	}
 	virtual ~MultiRegisterHandler(){}
 

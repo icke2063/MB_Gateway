@@ -47,6 +47,7 @@
 
 
 #include "Connection.h"
+#include <modbus_logging_macros.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
@@ -54,25 +55,16 @@ namespace MB_Gateway {
 Server::Server(uint16_t port, shared_ptr<threadpool::ThreadPool> ext_pool):
 		MBServer(port),
 		m_server_running(true),m_server_socket(-1){
-	/*
-	 * - set category name
-	 * - connect with console
-	 * - set loglevel
-	 * @todo do this by configfile
-	 */
-	logger = &log4cpp::Category::getInstance(std::string("Server"));
-	logger->setPriority(log4cpp::Priority::ERROR);
-	if(console)logger->addAppender(console);
 
-	logger->notice("Modbus TCP Server@%i",m_port);
+	modbus_NOTICE_WRITE("Modbus TCP Server@%i",m_port);
 
 	m_conn_lock.reset(new mutex());
 
 	if(ext_pool.get()){
 	  pool = ext_pool;
-	  logger->info("Server use extern ThreadPool");
+	  modbus_INFO_WRITE("Server use extern ThreadPool");
 	} else {
-	  logger->info("Server use intern ThreadPool");
+	  modbus_INFO_WRITE("Server use intern ThreadPool");
 	  pool = shared_ptr<threadpool::ThreadPool>(new threadpool::ThreadPool());
 	  pool->setHighWatermark(5);
 	}
@@ -82,18 +74,18 @@ Server::Server(uint16_t port, shared_ptr<threadpool::ThreadPool> ext_pool):
 		m_server_thread.reset(new thread(&Server::waitForConnection, this));	// create new scheduler thread
 		m_conn_handler_thread.reset(new thread(&Server::connection_handler, this));
 	} catch (std::runtime_error& e) {
-		logger->fatal("Cannot create Server/Connection threads: %s\n",e.what());
+		modbus_CRIT_WRITE("Cannot create Server/Connection threads: %s\n",e.what());
 		exit(0);
 	}
 }
 
 Server::~Server() {
-	logger->notice("~Server");
+	modbus_NOTICE_WRITE("~Server");
 	m_server_running = false;
 	if(m_server_thread.get() && m_server_thread->joinable())m_server_thread->join();
 	if(m_conn_handler_thread.get() && m_conn_handler_thread->joinable())m_conn_handler_thread->join();
 
-	logger->debug("leave ~Server");
+	modbus_DEBUG_WRITE("leave ~Server");
 }
 
 void Server::waitForConnection(void){
@@ -105,12 +97,12 @@ void Server::waitForConnection(void){
     /* libmodbus */
 	modbus_t *ctx;
 
-	logger->debug("Server Thread@%i",m_port);
+	modbus_DEBUG_WRITE("Server Thread@%i",m_port);
 
 	//prepare listening
 	ctx = modbus_new_tcp("127.0.0.1", m_port);
 	if(ctx == NULL){
-		logger->fatal("error: modbus_new_tcp");
+		modbus_CRIT_WRITE("error: modbus_new_tcp");
 		exit(0);
 	}
 
@@ -118,11 +110,11 @@ void Server::waitForConnection(void){
 	//get new socket
 	m_server_socket = modbus_tcp_listen(ctx, 1);
 	if(m_server_socket == -1){
-		logger->fatal("error: modbus_tcp_listen");
+		modbus_CRIT_WRITE("error: modbus_tcp_listen");
 		exit(0);
 	}
 
-	logger->debug("Server FD:%i",m_server_socket);
+	modbus_DEBUG_WRITE("Server FD:%i",m_server_socket);
 
 	while (m_server_running)
 	{
@@ -136,7 +128,7 @@ void Server::waitForConnection(void){
 		try {
 		   retval = select(m_server_socket+1, &rfds, &rfds, NULL, &tv);
 		} catch (const std::exception& e) {;
-			logger->error("error: select exception");
+			modbus_ERROR_WRITE("error: select exception");
 			continue;
 		}
 
@@ -145,7 +137,7 @@ void Server::waitForConnection(void){
 		}
 
 		if(retval < 0 ){
-			logger->error("select error:%d - %s",retval,strerror(errno));
+			modbus_ERROR_WRITE("select error:%d - %s",retval,strerror(errno));
 			continue;
 		}
 
@@ -155,7 +147,7 @@ void Server::waitForConnection(void){
 
 		if (modbus_tcp_accept(ctx_tmp, &m_server_socket) != -1) {
 
-			logger->info("modbus_tcp_accept:%i",modbus_get_socket(ctx_tmp));
+			modbus_INFO_WRITE("modbus_tcp_accept:%i",modbus_get_socket(ctx_tmp));
 
 			if(m_conn_lock.get() != NULL){
 				lock_guard<mutex> lock(*m_conn_lock.get());
@@ -164,12 +156,12 @@ void Server::waitForConnection(void){
 					shared_ptr<Connection> tmp(new Connection(ctx_tmp));
 					openConnections.push_back(tmp);
 				}catch(std::runtime_error& e){
-					logger->error("Cannot create Connection:%s", e.what());
+					modbus_ERROR_WRITE("Cannot create Connection:%s", e.what());
 				}
 			}
 		}else
 		{
-			logger->error("error modbus_tcp_accept");
+			modbus_ERROR_WRITE("error modbus_tcp_accept");
 		}
 
 	}
@@ -210,7 +202,7 @@ void Server::connection_handler (void){
 				}
 
 				if(curConn->getStatus() == MB_Framework::MBConnection::closed){//remove closed connection
-					logger->debug("remove Connection[%d]\n",modbus_get_socket(curConn->getConnInfo()));
+					modbus_DEBUG_WRITE("remove Connection[%d]\n",modbus_get_socket(curConn->getConnInfo()));
 					//delete curConn; //done by shared_ptr
 					conn_it = openConnections.erase(conn_it);
 					continue;
@@ -222,7 +214,7 @@ void Server::connection_handler (void){
 			try {
 			   retval = select(maxFD+1, &rfds, &rfds, NULL, &tv);
 			} catch (const std::exception& e) {;
-				logger->error("error: select exception");
+				modbus_ERROR_WRITE("error: select exception");
 				continue;
 			}
 
@@ -231,11 +223,12 @@ void Server::connection_handler (void){
 			}
 
 			if(retval < 0 ){
-				logger->error("select error:%d - %s",retval,strerror(errno));
+				modbus_ERROR_WRITE("select error:%d - %s",retval,strerror(errno));
 				continue;
 			}
 
-			logger->debug("handle connecton: %d\n",openConnections.size());
+
+			modbus_DEBUG_WRITE("handle connecton: %d\n",openConnections.size());
 
 			conn_it = openConnections.begin();
 
@@ -243,7 +236,7 @@ void Server::connection_handler (void){
 				shared_ptr<Connection> curConn =  dynamic_pointer_cast<Connection>(*conn_it);
 				if(curConn.get() && FD_ISSET(modbus_get_socket( curConn->getConnInfo() ), &rfds)){//add open connection into set
 					curConn -> setStatus(MB_Framework::MBConnection::busy);
-					logger->debug("data on socket[%d]\n",modbus_get_socket( curConn->getConnInfo()));
+					modbus_DEBUG_WRITE("data on socket[%d]\n",modbus_get_socket( curConn->getConnInfo()));
 					//use threadpool
 					threadpool::FunctorInt *tmpFunctor = new Connection::ConnFunctor(curConn);
 					while(m_server_running && ((tmpFunctor = pool->delegateFunctor(tmpFunctor))) != NULL  ){
@@ -251,7 +244,6 @@ void Server::connection_handler (void){
 					}
 
 					if(tmpFunctor != NULL  ){
-					  logger->error("Functor could not be added\n");
 					  delete tmpFunctor;
 					  curConn -> setStatus(MB_Framework::MBConnection::open);
 					}

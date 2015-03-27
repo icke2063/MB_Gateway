@@ -3,6 +3,59 @@ configure_file(
 	${CMAKE_CURRENT_BINARY_DIR}/build_options.h
 )
 
+
+### Logging stuff ###
+
+SET(LOGGING_PREFIX crumby)
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.h
+)
+
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.c.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+
+SET(LOG_SRC 
+    ${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+UNSET(LOGGING_PREFIX)
+
+SET(LOGGING_PREFIX modbus)
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.h
+)
+
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.c.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+
+SET(LOG_SRC ${LOG_SRC}
+    ${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+UNSET(LOGGING_PREFIX)
+
+SET(LOGGING_PREFIX i2c)
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.h
+)
+
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.c.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+
+SET(LOG_SRC ${LOG_SRC}
+    ${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+UNSET(LOGGING_PREFIX)
+
+
+
 ### ADD INCLUDE DIRS ###
 # add the binary tree to the search path for include files
 include_directories(
@@ -16,8 +69,6 @@ include_directories(
 
 ## find extern lib
 find_library(MODBUS_LIB modbus)
-find_library(LOG4CPP log4cpp)
-
 
 ### ADD SOURCES ###
 #add common_sources
@@ -88,6 +139,7 @@ endif (I2C_SUPPORT)
 ### ADD TARGET ###
 add_executable (${PROJECT_NAME} base/MB_Gateway.cpp
   ${DEF_SOURCES}
+  ${LOG_SRC}
   ${PAGES_CPP_SRC}
   ${I2C_SOURCES}
 )
@@ -108,7 +160,6 @@ endif()
 #default libraries
 target_link_libraries(${PROJECT_NAME}
 	${MODBUS_LIB}
-	${LOG4CPP}
 	common_cpp-shared
 	tntnet
 	cxxtools

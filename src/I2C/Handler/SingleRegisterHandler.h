@@ -20,7 +20,7 @@ class SingleRegisterHandler: public MultiByteHandler {
 public:
 	SingleRegisterHandler(enum address_mode mode = _8bit) :
 			MultiByteHandler(mode, 2) {
-		logger->info("SingleRegisterHandler");
+		i2c_INFO_WRITE("SingleRegisterHandler");
 	}
 	virtual ~SingleRegisterHandler() {
 	}

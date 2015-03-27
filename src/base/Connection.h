@@ -49,15 +49,13 @@
 #include <VirtualRTUSlave.h>
 
 //common_cpp
-#include <Logger.h>
 #include <ThreadPool.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
 
 class Connection:
-	public icke2063::MB_Framework::MBConnection,
-	public icke2063::common_cpp::Logger{
+	public icke2063::MB_Framework::MBConnection{
 
 		friend class Server;	//ok lets play together ;-)
 
@@ -67,8 +65,8 @@ class Connection:
 	class ConnFunctor:
 		public icke2063::threadpool::Functor{
 	public:
-		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):
-		    wp_conn(conn){}
+		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn, timeval inc):
+		    wp_conn(conn),m_incoming(inc){}
 		virtual ~ConnFunctor(){}
 
 	private:

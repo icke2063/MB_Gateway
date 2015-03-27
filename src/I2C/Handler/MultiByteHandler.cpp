@@ -26,56 +26,56 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 	uint16_t i2c_address;
 	uint16_t byte_count;
 
-	logger->debug("MultiByteHandler::handleReadAccess[0x%x]", m_mode);
+	i2c_DEBUG_WRITE("MultiByteHandler::handleReadAccess[0x%x]", m_mode);
 
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) { //got correct param object pointer
-		logger->debug("HandlerParam ok");
+		i2c_DEBUG_WRITE("HandlerParam ok");
 
 		address = curHandler->m_address;
 		i2c_address = 2 * address;
 
-		logger->debug("slave:%i", curHandler->m_slave);
-		logger->debug("function:%i", curHandler->m_function);
+		i2c_DEBUG_WRITE("slave:%i", curHandler->m_slave);
+		i2c_DEBUG_WRITE("function:%i", curHandler->m_function);
 
-		logger->debug("p_mb_mapping:0x%x", curHandler->p_mb_mapping);
-		logger->debug("address:%i", address);
-		logger->debug("I2C Address:0x%x", i2c_address);
+		i2c_DEBUG_WRITE("p_mb_mapping:0x%x", curHandler->p_mb_mapping);
+		i2c_DEBUG_WRITE("address:%i", address);
+		i2c_DEBUG_WRITE("I2C Address:0x%x", i2c_address);
 
 		if (m_byte_count < 0)
 			byte_count = curHandler->m_count * 2;
 		else
 			byte_count = m_byte_count;
 
-		logger->debug("count:%i", curHandler->m_count);
-		logger->debug("byte_count:%i", byte_count);
+		i2c_DEBUG_WRITE("count:%i", curHandler->m_count);
+		i2c_DEBUG_WRITE("byte_count:%i", byte_count);
 
 		//check FC support and storage size
 		switch (curHandler->m_function) {
 		case _FC_READ_INPUT_REGISTERS: //FC 03:read holding register
 			if (!enableReadInpReg) {
-				logger->error("enableReadInpReg: false");
+				i2c_ERROR_WRITE("enableReadInpReg: false");
 				return 0;
 			}
 			if (address + (byte_count / 2)
 					> curHandler->p_mb_mapping->nb_input_registers) {
-				logger->error("mapping size failure");
+				i2c_ERROR_WRITE("mapping size failure");
 				return 0;
 			}
 			break;
 		case _FC_READ_HOLDING_REGISTERS: //FC 04:read input register
 			if (!enableReadHolReg) {
-				logger->error("enableReadHolReg: false");
+				i2c_ERROR_WRITE("enableReadHolReg: false");
 				return 0;
 			}
 			if (address + (byte_count / 2)
 					> curHandler->p_mb_mapping->nb_registers) {
-				logger->error("mapping size failure");
+				i2c_ERROR_WRITE("mapping size failure");
 				return 0;
 			}
 			break;
 		default: //not supported FC in this handler
-			logger->error("not supported FC");
+			i2c_ERROR_WRITE("not supported FC");
 			return 0;
 		}
 
@@ -96,7 +96,7 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 		switch (m_mode) {
 		case _8bit: //8 bit address mode -> i2c_address should be under 0xff
 			if (i2c_address > 0xff) {
-				logger->error("8Bit mode[%i]", i2c_address);
+				i2c_ERROR_WRITE("8Bit mode[%i]", i2c_address);
 				return 0;
 			}
 			recvbuffer[0] = (i2c_address & 0xff); //only low value
@@ -124,7 +124,7 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 						(uint16_t*)recvbuffer, (size_t) curHandler->m_count);
 //				int i;
 //				for(i=0;i<byte_count;i++){
-//					logger->debug("recv[%i]:0x%x",i,recvbuffer[i]);
+//					i2c_DEBUG_WRITE("recv[%i]:0x%x",i,recvbuffer[i]);
 //				}
 			}
 				break;
@@ -135,7 +135,7 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 						(uint16_t*)recvbuffer, (size_t) curHandler->m_count);
 //				int i;
 //				for(i=0;i<byte_count;i++){
-//					logger->debug("recv[%i]:0x%x",i,recvbuffer[i]);
+//					i2c_DEBUG_WRITE("recv[%i]:0x%x",i,recvbuffer[i]);
 //				}
 			}
 				break;
@@ -145,7 +145,7 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 			return ((byte_count % 2) == 0) ?
 					byte_count / 2 : (byte_count / 2) + 1;
 		} else
-			logger->error("Read_I2C_Bytes failure");
+			i2c_ERROR_WRITE("Read_I2C_Bytes failure");
 	}
 	return 0; //return zero register handled > modbus exception
 }
@@ -158,7 +158,7 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 	uint8_t send_offset = 0;
 	uint16_t ret = 0;
 
-	logger->debug("MultiByteHandler::handleWriteAccess[%i]", m_mode);
+	i2c_DEBUG_WRITE("MultiByteHandler::handleWriteAccess[%i]", m_mode);
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) { //got correct param object pointer
 		if (m_byte_count < 0)
@@ -176,14 +176,14 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 		address = curHandler->m_address;
 		i2c_address = address * 2;
 
-		logger->debug("slave:%i", slave);
-		logger->debug("function:%i", curHandler->m_function);
-		logger->debug("count:%i", curHandler->m_count);
-		logger->debug("byte_count:%i", byte_count);
-		logger->debug("address:%i", address);
-		logger->debug("i2c_address:%i", i2c_address);
+		i2c_DEBUG_WRITE("slave:%i", slave);
+		i2c_DEBUG_WRITE("function:%i", curHandler->m_function);
+		i2c_DEBUG_WRITE("count:%i", curHandler->m_count);
+		i2c_DEBUG_WRITE("byte_count:%i", byte_count);
+		i2c_DEBUG_WRITE("address:%i", address);
+		i2c_DEBUG_WRITE("i2c_address:%i", i2c_address);
 
-		logger->debug("p_mb_mapping:%x", curHandler->p_mb_mapping);
+		i2c_DEBUG_WRITE("p_mb_mapping:%x", curHandler->p_mb_mapping);
 
 		/**
 		 * @todo path by config or cmdline param
@@ -195,14 +195,14 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 		switch (m_mode) {
 		case _8bit: //8 bit address mode -> i2c_address should be under 0xff
 			if (i2c_address > 0xff) {
-				logger->error("8Bit mode[%i]", i2c_address);
+				i2c_ERROR_WRITE("8Bit mode[%i]", i2c_address);
 				return 0;
 			}
-			logger->debug("8Bit mode[0x%x]", i2c_address);
+			i2c_DEBUG_WRITE("8Bit mode[0x%x]", i2c_address);
 			sendbuffer[send_offset++] = (i2c_address & 0xff); //only low value
 			break;
 		case _16bit:
-			logger->debug("16Bit mode[0x%x]", i2c_address);
+			i2c_DEBUG_WRITE("16Bit mode[0x%x]", i2c_address);
 			sendbuffer[send_offset++] = (i2c_address >> 8); //first high
 			sendbuffer[send_offset++] = (i2c_address & 0xff); //second low
 			break;
@@ -214,24 +214,24 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 		switch (curHandler->m_function) {
 		case _FC_WRITE_SINGLE_REGISTER: //FC 06:write single holding register
 			if (!enableWriteSHolReg){
-				logger->error("WriteSingleHolReg disabled");
+				i2c_ERROR_WRITE("WriteSingleHolReg disabled");
 				return 0;
 			}
 			break;
 		case _FC_WRITE_MULTIPLE_REGISTERS: //FC 16:write multiple holding register
 		{
 			if (!enableWriteHolReg){
-				logger->error("WriteHilReg disabled");
+				i2c_ERROR_WRITE("WriteHilReg disabled");
 				return 0;
 			}
 			if ((address + (byte_count/2)) > curHandler->p_mb_mapping->nb_registers){
-				logger->error("out of range: 0x%x > 0x%x",(address + (byte_count/2)),curHandler->p_mb_mapping->nb_registers);
+				i2c_ERROR_WRITE("out of range: 0x%x > 0x%x",(address + (byte_count/2)),curHandler->p_mb_mapping->nb_registers);
 				return 0;
 			}
 		}
 			break;
 		default: //not supported FC in this handler
-			logger->error("FC 0x%x not supported",curHandler->m_function);
+			i2c_ERROR_WRITE("FC 0x%x not supported",curHandler->m_function);
 			return 0;
 		}
 
@@ -244,11 +244,11 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 				slave, sendbuffer, m_mode, byte_count)){
 			ret = ((byte_count % 2) == 0) ?
 					byte_count / 2 : (byte_count / 2) + 1;
-			logger->debug("written data count: %i",ret);
+			i2c_DEBUG_WRITE("written data count: %i",ret);
 			return ret;
 		}
 		else
-			logger->error("Write_I2C_Bytes failure");
+			i2c_ERROR_WRITE("Write_I2C_Bytes failure");
 
 	}
 	return 0; //return zero register handled > modbus exception
@@ -257,7 +257,7 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 int MultiByteHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 	uint16_t byte_count;
 
-	logger->debug("MultiByteHandler::checkWriteAccess");
+	i2c_DEBUG_WRITE("MultiByteHandler::checkWriteAccess");
 	HandlerParam *curHandler = dynamic_cast<HandlerParam*>(param);
 	if (curHandler != NULL) { //got correct param object pointer
 		if (m_byte_count < 0)

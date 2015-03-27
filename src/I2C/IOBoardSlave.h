@@ -25,7 +25,6 @@
 
 #define SLAVE_TYPE_IOBOARD	SLAVE_ID
 
-#include <Logger.h>
 #include <MultiByteHandler.h>
 
 #include <I2CSlave.h>

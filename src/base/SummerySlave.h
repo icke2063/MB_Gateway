@@ -33,7 +33,6 @@
 
 //own lib
 #include <VirtualRTUSlave.h>
-#include <Logger.h>
 
 #include <ThreadPool.h>
 
@@ -50,7 +49,6 @@ namespace MB_Gateway {
 
 class SummerySlave:
 	public VirtualRTUSlave,
-	public icke2063::common_cpp::Logger,
 	public SUMMERYSLAVE_H_NS::enable_shared_from_this<SummerySlave> {
   
   class SummerySlaveFunctor:
