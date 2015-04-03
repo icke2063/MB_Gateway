@@ -85,12 +85,13 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 		 */
 		uint8_t recvbuffer[m_mode + byte_count];
 
-		/**
-		 * @todo path by config or cmdline param
-		 */
 
-		boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen(
-				"/dev/i2c-1");
+		if(m_sp_i2c_comm.get() == NULL
+			|| m_sp_i2c_comm->i2cOpen() == false)
+		{
+			i2c_ERROR_WRITE("I2C communication error\n");
+			return 0;
+		}
 
 		//write i2c register address -> recvbuffer (depending on address mode)
 		switch (m_mode) {
@@ -111,8 +112,8 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 		}
 
 		// read data from i2c bus
-		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(
-				curHandler->m_slave, recvbuffer, m_mode, byte_count)) {
+		if (m_sp_i2c_comm->Read_I2C_Bytes(curHandler->m_slave, recvbuffer, m_mode, byte_count))
+		{
 
 			icke2063::common_cpp::Convert converter;
 			//copy data to mb_mapping
@@ -185,11 +186,12 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 
 		i2c_DEBUG_WRITE("p_mb_mapping:%x", curHandler->p_mb_mapping);
 
-		/**
-		 * @todo path by config or cmdline param
-		 */
-		boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen(
-				"/dev/i2c-1");
+		if(m_sp_i2c_comm.get() == NULL
+			|| m_sp_i2c_comm->i2cOpen() == false)
+		{
+			i2c_ERROR_WRITE("I2C communication error\n");
+			return 0;
+		}
 
 		//write i2c register address -> sendbuffer (depending on address mode)
 		switch (m_mode) {
@@ -240,7 +242,7 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 				&curHandler->p_mb_mapping->tab_registers[address],
 				(size_t) curHandler->m_count);
 
-		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(
+		if (m_sp_i2c_comm->Write_I2C_Bytes(
 				slave, sendbuffer, m_mode, byte_count)){
 			ret = ((byte_count % 2) == 0) ?
 					byte_count / 2 : (byte_count / 2) + 1;

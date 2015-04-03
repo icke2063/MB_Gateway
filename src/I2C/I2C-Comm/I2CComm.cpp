@@ -35,15 +35,21 @@ I2C_Comm::I2C_Comm() :
 
 }
 
+I2C_Comm::I2C_Comm(std::string& i2c_master_path) :
+		m_i2cFD(-1), m_path(""), m_open_i2c_bus(false)
+{
+	resetLivelist();
+	i2cOpen(i2c_master_path);
+}
+
 I2C_Comm::~I2C_Comm() {
 	i2cClose();
 }
 
-bool I2C_Comm::i2cOpen(std::string path) {
+bool I2C_Comm::i2cOpen(std::string& path) {
 	if (path.compare(m_path) != 0) {//only open new connections
 		if (m_i2cFD > 0)
 			i2cClose(); //close existing connection
-
 
 		if (((m_i2cFD = open(path.c_str(), O_RDWR))) < 0){
 			return false; //open new connection

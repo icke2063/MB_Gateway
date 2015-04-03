@@ -33,6 +33,7 @@
 
 //own lib
 #include <I2CSlave.h>
+#include <I2CComm.h>
 
 #define DEFAULT_SCAN_TIMEOUT_MS	1000
 
@@ -43,7 +44,7 @@ namespace I2C {
 class I2C_Scanner
 {
 public:
-	I2C_Scanner(unsigned int timeout = DEFAULT_SCAN_TIMEOUT_MS);
+	I2C_Scanner(std::string& i2c_master_path, unsigned int timeout = DEFAULT_SCAN_TIMEOUT_MS);
 	virtual ~I2C_Scanner();
 
 private:
@@ -63,7 +64,15 @@ private:
 	I2CSCANNER_H_NS::mutex m_Mutex;                   // Mutex
     unsigned int m_timeout;
 
-    I2CSCANNER_H_NS::shared_ptr<I2C_Slave> findSlaveType (uint8_t slaveaddress);
+    I2CSCANNER_H_NS::shared_ptr<I2C_Slave> createSlavebyType (uint8_t slaveaddress, I2CSCANNER_H_NS::shared_ptr<I2C::I2C_Comm> i2c_comm);
+
+    /* path to I2C master */
+    std::string m_I2C_master_path;
+
+    /**
+     * I2C communication object
+     */
+    I2CSCANNER_H_NS::shared_ptr<I2C::I2C_Comm> m_sp_i2cbus_comm;
 };
 
 }}} /* namespace icke2063::MB_Gateway::I2C */

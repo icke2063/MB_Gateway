@@ -18,8 +18,8 @@ namespace I2C {
 
 class HolRegHandler: public MultiByteHandler {
 public:
-	HolRegHandler(enum address_mode mode = _8bit) :
-		MultiByteHandler(mode) {
+	HolRegHandler(I2CMB_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm, enum address_mode mode = _8bit) :
+		MultiByteHandler(sp_i2c_comm, mode) {
 		i2c_INFO_WRITE("HolRegHandler");
 		enableReadInpReg = false;
 	}

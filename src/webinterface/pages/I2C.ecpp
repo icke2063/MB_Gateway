@@ -17,6 +17,7 @@ using std::string;
 using namespace icke2063::MB_Gateway;
 
 #include <I2CComm.h>
+#include <I2CSlave.h>
 using namespace icke2063::MB_Gateway::I2C;
 
 #ifndef ICKE2063_CRUMBY_NO_CPP11
@@ -55,12 +56,24 @@ std::string i2c_string = "";
 <div id="i2c_form">
 <%cpp>
 shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-if( p_slave.get() != NULL ){	
+if( p_slave.get() != NULL )
+{	
 	uint8_t recvbuffer[100];
+	bool i2copen = false;
 	
-if(btn_i2c_form == "Read"){
-	if(	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1") ){
+if(btn_i2c_form == "Read")
+{
 
+	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+	if( p_slave != NULL )
+	{
+		shared_ptr<I2C_Slave> p_i2c_slave = dynamic_pointer_cast<I2C_Slave>(p_slave);
+	
+		if(p_i2c_slave.get() == NULL)return 0;		//no IO_Board object -> exit function
+
+		//get data by i2c request		
+		if(	p_i2c_slave->getI2CComm()->i2cOpen() ) i2copen = true;
+					
 		switch(i2c_address_mode){
 			case 1:
 				recvbuffer[0] = (i2c_address & 0xff); //first only	
@@ -73,15 +86,30 @@ if(btn_i2c_form == "Read"){
 				recvbuffer[0] = 0;	
 				break;
 		}
-		if (boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Read_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, 1)) {
-			i2c_value = recvbuffer[0];			
-		}
+ 
+		if(i2copen && p_i2c_slave->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, 1))
+		{
+			i2c_value = recvbuffer[0];
+		}						
 	}
+	
 }
-if(btn_i2c_form == "Write"){
-	if(	boost::serialization::singleton<I2C_Comm>::get_mutable_instance().i2cOpen("/dev/i2c-1") ){
-		int length = 0;
-		switch(i2c_address_mode){
+if(btn_i2c_form == "Write")
+{
+
+	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+	if( p_slave != NULL )
+	{
+		shared_ptr<I2C_Slave> p_i2c_slave = dynamic_pointer_cast<I2C_Slave>(p_slave);
+	
+		if(p_i2c_slave.get() == NULL)return 0;		//no I2C_Slave object -> exit function
+
+		//get data by i2c request		
+		if(	p_i2c_slave->getI2CComm()->i2cOpen() ) i2copen = true;
+					
+	int length = 0;
+		switch(i2c_address_mode)
+		{
 			case 1:
 				recvbuffer[0] = (i2c_address & 0xff); //first only
 				if(i2c_data_mode == 1){
@@ -113,12 +141,13 @@ if(btn_i2c_form == "Write"){
 				recvbuffer[0] = 0;	
 				break;
 		}
-		if(boost::serialization::singleton<I2C_Comm>::get_mutable_instance().Write_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, length)){
 
-		}else{
-		
-		}
+ 
+		if(i2copen && p_i2c_slave->getI2CComm()->Write_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, length))
+		{
+		}						
 	}
+
 }
 </%cpp>
 <form action="<$ request.getUrl()$>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">

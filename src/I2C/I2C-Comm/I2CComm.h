@@ -42,6 +42,7 @@ namespace I2C {
 class I2C_Comm {
 public:
 	I2C_Comm();
+	I2C_Comm(std::string& i2c_master_path);
 	virtual ~I2C_Comm();
 
 	// Initialize functions
@@ -55,7 +56,7 @@ public:
 	 * - store given path
 	 * - reopen i2cbus if different path as already stored
 	 */
-	bool i2cOpen(std::string path); // open i2cbus at given path
+	bool i2cOpen(std::string& path); // open i2cbus at given path
 	void i2cClose(); // close i2cbus
 	bool i2cSetAddress(unsigned char address); // changes slave address
 

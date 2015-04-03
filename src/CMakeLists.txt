@@ -132,6 +132,7 @@ if (I2C_SUPPORT)
 	  I2C/I2C-Comm/I2CComm.cpp
 	  I2C/Handler/MultiByteHandler.cpp
 	  I2C/I2CScanner.cpp
+	  I2C/I2CSlave.cpp
 	)
 	
 endif (I2C_SUPPORT)
