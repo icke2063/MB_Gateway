@@ -103,7 +103,7 @@ void Server::waitForConnection(void){
 	ctx = modbus_new_tcp("127.0.0.1", m_port);
 	if(ctx == NULL){
 		modbus_CRIT_WRITE("error: modbus_new_tcp");
-		exit(0);
+		return;
 	}
 
 	/* modbus_set_debug(ctx, TRUE); */
@@ -111,7 +111,7 @@ void Server::waitForConnection(void){
 	m_server_socket = modbus_tcp_listen(ctx, 1);
 	if(m_server_socket == -1){
 		modbus_CRIT_WRITE("error: modbus_tcp_listen");
-		exit(0);
+		return;
 	}
 
 	modbus_DEBUG_WRITE("Server FD:%i",m_server_socket);
