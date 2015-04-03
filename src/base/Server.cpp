@@ -199,6 +199,7 @@ void Server::connection_handler (void){
 				if(curConn.get() && curConn->getStatus() == MB_Framework::MBConnection::open){//add open connection into set
 					FD_SET(modbus_get_socket(curConn->getConnInfo()), &rfds);
 					if(maxFD < modbus_get_socket(curConn->getConnInfo()))maxFD = modbus_get_socket(curConn->getConnInfo());
+					curConn->setStatus(MB_Framework::MBConnection::wait);	//mark connection as in fdset
 				}
 
 				if(curConn->getStatus() == MB_Framework::MBConnection::closed){//remove closed connection
@@ -234,18 +235,27 @@ void Server::connection_handler (void){
 
 			while(conn_it != openConnections.end()){//loop over all connections
 				shared_ptr<Connection> curConn =  dynamic_pointer_cast<Connection>(*conn_it);
-				if(curConn.get() && FD_ISSET(modbus_get_socket( curConn->getConnInfo() ), &rfds)){//add open connection into set
-					curConn -> setStatus(MB_Framework::MBConnection::busy);
+				if(curConn.get() && FD_ISSET(modbus_get_socket( curConn->getConnInfo() ), &rfds)){//handle connections with incoming data
+					curConn -> setStatus(MB_Framework::MBConnection::busy);	//mark current connection as busy (handle current request)
 					modbus_DEBUG_WRITE("data on socket[%d]\n",modbus_get_socket( curConn->getConnInfo()));
 					//use threadpool
-					threadpool::FunctorInt *tmpFunctor = new Connection::ConnFunctor(curConn);
-					while(m_server_running && ((tmpFunctor = pool->delegateFunctor(tmpFunctor))) != NULL  ){
-					  usleep(100);
-					}
+					threadpool::FunctorInt *tmpFunctor = new Connection::ConnFunctor(curConn,incoming);
+//					while(m_server_running && ((tmpFunctor = pool->delegateFunctor(tmpFunctor))) != NULL  ){
+//					  usleep(100);
+//					}
+//
+//					if(tmpFunctor != NULL  ){
+//					  modbus_ERROR_WRITE("Functor could not be added\n");
+//					  delete tmpFunctor;
+//					  curConn -> setStatus(MB_Framework::MBConnection::open);
+//					}
 
-					if(tmpFunctor != NULL  ){
-					  delete tmpFunctor;
-					  curConn -> setStatus(MB_Framework::MBConnection::open);
+					tmpFunctor->functor_function();
+					delete tmpFunctor;
+				} else {
+					if (curConn->getStatus() == MB_Framework::MBConnection::wait)//reset connection without incoming data
+					{
+						curConn->setStatus(MB_Framework::MBConnection::open);//reset status
 					}
 				}
 				++conn_it;
