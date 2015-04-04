@@ -239,7 +239,7 @@ void Server::connection_handler (void){
 					curConn -> setStatus(MB_Framework::MBConnection::busy);	//mark current connection as busy (handle current request)
 					modbus_DEBUG_WRITE("data on socket[%d]\n",modbus_get_socket( curConn->getConnInfo()));
 					//use threadpool
-					threadpool::FunctorInt *tmpFunctor = new Connection::ConnFunctor(curConn,incoming);
+					threadpool::FunctorInt *tmpFunctor = new Connection::ConnFunctor(curConn);
 //					while(m_server_running && ((tmpFunctor = pool->delegateFunctor(tmpFunctor))) != NULL  ){
 //					  usleep(100);
 //					}

@@ -35,8 +35,6 @@ namespace po = boost::program_options;
 #include <SlaveList.h>
 #include <SummerySlave.h>
 
-#include <WebInterface.h>
-
 using namespace icke2063::MB_Framework;
 
 #include <ThreadPool.h>
@@ -47,21 +45,36 @@ using namespace icke2063::MB_Framework;
 
 
 
-#ifdef I2C_SUPPORT
+#ifdef CRUMBY_I2C_SUPPORT
 	#include <I2CScanner.h>
 	#include <i2c_logging_macros.h>
 #endif
 
+#ifdef CRUMBY_WEBINTERFACE
+	#include <WebInterface.h>
+#endif
+
 using namespace icke2063::MB_Gateway;
+
+FILE *logfile = NULL;
 
 void crumby_logfn(uint8_t loglevel, const char *file, const int line, const char *fn, const char *format, va_list args)
 {
-	printf(format, args);
-	printf("\n");
+	if(logfile != NULL)
+	{
+	    fprintf(logfile, "crumby[%d]: ", loglevel);
+	    vfprintf(logfile, format, args);
+	    fprintf(logfile, "\n");
+	    fflush( logfile );
+	}
 }
 
 int main(int argc, const char *argv[])
 {
+
+	logfile = stdout;
+
+
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	    ("help,h", "produce help message")
@@ -71,7 +84,7 @@ int main(int argc, const char *argv[])
 	    ("tp_loglevel", po::value<int>(), "")
 	    ;
 
-#ifdef I2C_SUPPORT
+#ifdef CRUMBY_I2C_SUPPORT
 	desc.add_options()
 	    ("i2c_master", po::value<std::string>(), "path to I2C master")
 	    ("i2c_loglevel", po::value<int>(), "I2C loglevel[0..7]")
@@ -115,7 +128,7 @@ int main(int argc, const char *argv[])
 	}
 	//
 
-#ifdef I2C_SUPPORT
+#ifdef CRUMBY_I2C_SUPPORT
 	std::string i2c_master_path("/dev/null");
 
 	if(vm.count("i2c_master")){
@@ -127,14 +140,16 @@ int main(int argc, const char *argv[])
 	}
 
 	i2c_SET_LOG_FN(crumby_logfn);
-	std::auto_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner(i2c_master_path));
+	std::auto_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner(i2c_master_path, 10000));
 #endif
 
 	shared_ptr<SummerySlave> sum = shared_ptr<SummerySlave>(new SummerySlave(pool,255));
 	sum->startFunctor();
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(sum);
 
+#ifdef CRUMBY_WEBINTERFACE
 	std::auto_ptr<WebInterface> webint(new WebInterface());
+#endif
 	
 	while (1) {
 		sleep(5);

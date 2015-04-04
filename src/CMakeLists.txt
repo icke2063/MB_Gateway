@@ -87,6 +87,7 @@ set (DEF_SOURCES
 )
 	
 
+if(CRUMBY_WEBINTERFACE)
 #add webinterface	
 set(ECPPC "/usr/bin/ecppc")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/webinterface)
@@ -115,9 +116,11 @@ foreach(_file ${ECPP_SRC})
     ) 
     list(APPEND PAGES_CPP_SRC ${file_cpp})
 endforeach()	
+endif(CRUMBY_WEBINTERFACE)
+
 		
 #add I2C includes
-if (I2C_SUPPORT)
+if (CRUMBY_I2C_SUPPORT)
 	include_directories(
 		${CMAKE_CURRENT_BINARY_DIR}/I2C
 		${CMAKE_CURRENT_SOURCE_DIR}/I2C
@@ -134,8 +137,19 @@ if (I2C_SUPPORT)
 	  I2C/I2CScanner.cpp
 	  I2C/I2CSlave.cpp
 	)
-	
-endif (I2C_SUPPORT)
+
+	if (CRUMBY_I2C_IOBOARD)
+	  	set (I2C_SOURCES
+		    ${I2C_SOURCES}
+		    I2C/IOBoardSlave.cpp
+		)
+		
+		include_directories(
+			${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C_IO_BOARD.git/base/inc	
+			${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C_IO_BOARD.git/common_AVR/config
+		)
+	endif(CRUMBY_I2C_IOBOARD)
+endif (CRUMBY_I2C_SUPPORT)
 
 ### ADD TARGET ###
 add_executable (${PROJECT_NAME} base/main.cpp
@@ -148,22 +162,30 @@ add_executable (${PROJECT_NAME} base/main.cpp
 add_executable (testclient testclient/MBGateway_Testclient.cpp)
 
 
+
 ### ADD PREPROCESS MACROS ###
 
 ### LINK LIBRARIES ###
-if(C++11 AND USE_C++11_SUPPORT)
+if(C++11 AND CRUMBY_USE_C++11_SUPPORT)
     target_link_libraries(${PROJECT_NAME} pthread)
 else()
     target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 endif()
+
+if(CRUMBY_WEBINTERFACE)
+target_link_libraries(${PROJECT_NAME}
+	tntnet
+	cxxtools
+)
+
+endif(CRUMBY_WEBINTERFACE)
+
 
 
 #default libraries
 target_link_libraries(${PROJECT_NAME}
 	${MODBUS_LIB}
 	common_cpp-shared
-	tntnet
-	cxxtools
 )
 
 target_link_libraries(testclient

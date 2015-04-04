@@ -4,8 +4,12 @@ project (crumby)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 
 #support switches
-option(I2C_SUPPORT "compile with I2C support" ON)
-option(USE_C++11_SUPPORT "use c++11 if available" ON)
+option(CRUMBY_USE_C++11_SUPPORT "use c++11 if available" ON)
+option(CRUMBY_WEBINTERFACE "enable webinterface" ON)
+
+## I2C
+option(CRUMBY_I2C_SUPPORT "compile with I2C support" ON)
+option(CRUMBY_I2C_IOBOARD " compile with I2C IOBoard support" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CXX11-CMake-Macros")
 
@@ -13,7 +17,7 @@ include(CXX11)
 
 check_for_cxx11_compiler(C++11)
 
-if(C++11 AND USE_C++11_SUPPORT)
+if(C++11 AND CRUMBY_USE_C++11_SUPPORT)
 ADD_DEFINITIONS(-std=c++0x)
   #enable c++11
   enable_cxx11()

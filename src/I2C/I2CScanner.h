@@ -2,8 +2,12 @@
  * @file   I2CScanner.h
  * @Author icke
  * @date   02.07.2013
- * @brief  Brief description of file.
- *
+ * @brief  I2C Scanner class. To scan the given I2C master device for all I2C slaves.
+ * 	
+ * Found slaves will be insert into MB Slavelist. Not found slaves will be deleted if
+ * already in list.
+ * 
+ * 
  * Detailed description of file.
  */
 
@@ -44,7 +48,7 @@ namespace I2C {
 class I2C_Scanner
 {
 public:
-	I2C_Scanner(std::string& i2c_master_path, unsigned int timeout = DEFAULT_SCAN_TIMEOUT_MS);
+	I2C_Scanner(std::string& i2c_master_path, unsigned int timeout_ms = DEFAULT_SCAN_TIMEOUT_MS);
 	virtual ~I2C_Scanner();
 
 private:
@@ -62,17 +66,17 @@ private:
 
 	I2CSCANNER_H_NS::condition_variable m_Condition;  // Condition variable for timed_wait
 	I2CSCANNER_H_NS::mutex m_Mutex;                   // Mutex
-    unsigned int m_timeout;
+	unsigned int m_timeout_ms;
 
-    I2CSCANNER_H_NS::shared_ptr<I2C_Slave> createSlavebyType (uint8_t slaveaddress, I2CSCANNER_H_NS::shared_ptr<I2C::I2C_Comm> i2c_comm);
+	I2CSCANNER_H_NS::shared_ptr<I2C_Slave> createSlavebyType (uint8_t slaveaddress);
 
-    /* path to I2C master */
-    std::string m_I2C_master_path;
+	/* path to I2C master */
+	std::string m_I2C_master_path;
 
-    /**
-     * I2C communication object
-     */
-    I2CSCANNER_H_NS::shared_ptr<I2C::I2C_Comm> m_sp_i2cbus_comm;
+	/**
+	* I2C communication object
+	*/
+      I2CSCANNER_H_NS::shared_ptr<I2C::I2C_Comm> m_sp_i2cbus_comm;
 };
 
 }}} /* namespace icke2063::MB_Gateway::I2C */

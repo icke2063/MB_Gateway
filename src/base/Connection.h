@@ -65,8 +65,8 @@ class Connection:
 	class ConnFunctor:
 		public icke2063::threadpool::Functor{
 	public:
-		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn, timeval inc):
-		    wp_conn(conn),m_incoming(inc){}
+		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):
+		    wp_conn(conn){}
 		virtual ~ConnFunctor(){}
 
 	private:

@@ -21,21 +21,28 @@ using namespace icke2063::MB_Gateway;
 <%cpp>
 for(int slave=0;slave<=255;slave++){
 if(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)){
+uint8_t  slave_type = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)->getType();
 </%cpp>
 <tr>
 	<# SlaveID #>
-	<td><$ (int)boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)->getType() $></td>
-	<# SlaveAddress #>	
-%switch(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave)->getType()){
+	<td><$ (int)slave_type $></td>
+	<# SlaveAddress #>
+%switch(slave_type){
 %case SLAVE_TYPE_SUMMERY:
 	<td><a href=index.html'><$ slave $></a></td>
 	<td>Summery Slave</td>
 %	break;
-%#ifdef I2C_SUPPORT
+%#ifdef CRUMBY_I2C_SUPPORT
+%case SLAVE_TYPE_I2C:
+	<td><a href='I2C.html?SlaveNr=<$$ slave $>'><$$ slave $></a></td>
+	<td>I2C Slave</td>
+%	break;
+#ifdef CRUMBY_I2C_IOBOARD
 %case SLAVE_TYPE_IOBOARD:
-	<td><a href='I2C_IO_Board.html?SlaveNr=<$ slave $>'><$ slave $></a></td>
+	<td><a href='I2C_IO_Board.html?SlaveNr=<$$ slave $>'><$$ slave $></a></td>
 	<td>I2C IO Board</td>
 %	break;
+#endif
 %#endif
 %default:
 	<td><a href='DSlave.html?SlaveNr=<$ slave $>'><$ slave $></a></td>

@@ -38,7 +38,8 @@ bool I2C_Slave::init(void) {
 		 * create mapping
 		 */
 		// add all tmp data handler
-		for (i = 0; i < 127; i++) {
+		for (i = 0; i < 127; i++)
+		{
 			m_input_handlerlist[i] = Multi;
 			m_holding_handlerlist[i] = Multi;
 			i2c_DEBUG_WRITE("add Multi handler[0x%x]", i);

@@ -26,6 +26,9 @@
 
  #cmakedefine ICKE2063_CRUMBY_NO_CPP11
 
- #cmakedefine I2C_SUPPORT
+ #cmakedefine CRUMBY_I2C_SUPPORT
+ #cmakedefine CRUMBY_I2C_IOBOARD
+ 
+ #cmakedefine CRUMBY_WEBINTERFACE
    
  #endif  /* _BUILD_OPTIONS_H_ */

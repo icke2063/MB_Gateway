@@ -32,11 +32,11 @@ SummerySlave::SummerySlave(shared_ptr<threadpool::ThreadPool> delayed_pool, uint
 		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true), m_timeout(timeout),m_delayed_pool(delayed_pool){
 
 	
-	crumby_INFO_WRITE("SummerySlave@%i",SlaveAddr);
-	crumby_DEBUG_WRITE("m_timeout: %d",m_timeout);
+	crumby_INFO_WRITE("SummerySlave@%i", SlaveAddr);
+	crumby_DEBUG_WRITE("m_timeout: %d", m_timeout);
 
-	crumby_DEBUG_WRITE("delayed_pool: 0x%x",delayed_pool.get());
-	crumby_DEBUG_WRITE("m_delayed_pool: 0x%x",m_delayed_pool.get());
+	crumby_DEBUG_WRITE("delayed_pool: 0x%x", delayed_pool.get());
+	crumby_DEBUG_WRITE("m_delayed_pool: 0x%x", m_delayed_pool.get());
 	
 
 	init();
@@ -52,9 +52,9 @@ SummerySlave::~SummerySlave() {
 	//if(p_scanner_thread.get() && p_scanner_thread->joinable())p_scanner_thread->join();
 }
 void SummerySlave::startFunctor(void){
-  crumby_INFO_WRITE("SummerySlave::startFunctor\n");
+  crumby_INFO_WRITE("SummerySlave::startFunctor");
 if(m_delayed_pool.get()){
-    crumby_INFO_WRITE("addFunctor\n");
+    crumby_INFO_WRITE("addFunctor");
   struct timeval now;
   gettimeofday(&now,NULL);
   m_delayed_pool->delegateDelayedFunctor( shared_ptr<threadpool::DelayedFunctorInt>( new threadpool::DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
@@ -66,32 +66,36 @@ if(m_delayed_pool.get()){
 void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 	uint8_t slave;
 
-	if(!m_slave.get()){
-		printf("SummerySlave::SummerySlaveFunctor::functor_function: m_slave failure\n");
+	if(!m_slave.get())
+	{
+		crumby_ALERT_WRITE("SummerySlave::SummerySlaveFunctor::functor_function: m_slave failure");
 	  return;
 	}
 	
 	shared_ptr<MBVirtualRTUSlave> curSlave;
 	crumby_DEBUG_WRITE("Summery Thread");
 
-	if (m_slave->m_running) {
+	if (m_slave->m_running) 
+	{
 		//p_scanner_thread->yield();
 		unique_lock<mutex> lock(m_slave->m_Mutex);
 
 		if (m_slave->m_Condition.wait_for(lock,
-				chrono::milliseconds(m_slave->m_timeout)) == cv_status::timeout ) {
+				chrono::milliseconds(m_slave->m_timeout)) == cv_status::timeout ) 
+		{
 			crumby_DEBUG_WRITE("scan slaves...");
-			crumby_DEBUG_WRITE("slavelist size: %d",boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size());
+			crumby_DEBUG_WRITE("slavelist size: %u",boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size());
 
 			slave=0;
 			/* loop over all detected slaves and insert data into list */
 			do{
-				curSlave =
-						boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(
-								slave);
-				if (curSlave) {
+				curSlave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave);
+				if (curSlave.get()) {
 					m_slave->m_mapping->tab_input_registers[slave] = curSlave->getType();
-				} else {
+					crumby_DEBUG_WRITE("Found slave[%i] type: 0x%x", slave, curSlave->getType());
+				}
+				else
+				{
 					m_slave->m_mapping->tab_input_registers[slave] = DEFAULT_SUMMERY_VALUE;
 
 				}

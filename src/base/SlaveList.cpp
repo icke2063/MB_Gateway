@@ -31,6 +31,9 @@ namespace MB_Gateway {
 	using namespace boost;
 #endif
   
+
+#include "crumby_logging_macros.h"
+
 SlaveList::SlaveList(){
   /* initialisation of lock object */
   m_slavelist_lock = shared_ptr<mutex>(new mutex());
@@ -41,16 +44,23 @@ bool SlaveList::addSlave(shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> n
     shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> curSlave = dynamic_pointer_cast<icke2063::MB_Framework::MBVirtualRTUSlave>(newSlave);
     uint8_t index;
 
-    if(!curSlave.get()){
+    if(curSlave.get() == NULL)
+    {
       return false;
     }
     index = curSlave->getSlaveAddr();
     lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
     std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
-    if (it == m_slavelist.end()) {
+    if (it == m_slavelist.end())
+    {
+	    crumby_INFO_WRITE("add new Slave[%u]\n", index);
 	    m_slavelist[index] = newSlave;
 	    return true;
+    }
+    else
+    {
+	    crumby_WARN_WRITE("Cannot add slave[%u]: already listeted\n", index);
     }
 
     return false;
