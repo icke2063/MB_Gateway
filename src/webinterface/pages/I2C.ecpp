@@ -3,10 +3,11 @@
 <& common_functions.html_head qparam >
 <& common_functions.header qparam >
 <& form_i2c qparam>
+<& form_i2c_dump qparam>
 <& common_functions.footer qparam >
 
 <%pre>
-#include <stddef.h>
+//#include <stddef.h>
 #include <string>
 using std::string;
 
@@ -28,15 +29,16 @@ using namespace icke2063::MB_Gateway::I2C;
 	using namespace boost;
 #endif
 
-
+#include <pages_logging_macros.h>
 </%pre>
 
 <%request scope="page">
-
+/// transfer variable between components
+int i2c_transfer = -1;
 </%request>
 
 <####################################>
-<# i2c formular for read/write		#>
+<# i2c formular for read/write	    #>
 <####################################>
 <%def form_i2c>
 
@@ -44,41 +46,96 @@ using namespace icke2063::MB_Gateway::I2C;
 int SlaveNr = 0;
 int i2c_address_mode = 1;
 int i2c_data_mode = 1;
-size_t i2c_max_stringlength = 20;
 
 int i2c_address = -1;
+int i2c_value = -1;
 
 string btn_i2c_form = "";
-int i2c_value = -1;
 std::string i2c_string = "";
+size_t i2c_max_stringlength = 20;
 
 </%args>
 <div id="i2c_form">
 <%cpp>
+
 shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 if( p_slave.get() != NULL )
 {	
-	uint8_t recvbuffer[100];
-	bool i2copen = false;
-	
-if(btn_i2c_form == "Read")
-{
+</%cpp>
+<& handle_form_i2c qparam >
+<fieldset class="box">
+<legend>I2C R/W</legend>
+<form action="<$ request.getUrl()$>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">
+	<input type='hidden' name='SlaveNr' value='<$ SlaveNr $>' />
+	I2C address mode:
+		<input type="radio" name="i2c_address_mode" value="1" <$ i2c_address_mode==1?"checked":"" $> > 8 Bit
+		<input type="radio" name="i2c_address_mode" value="2" <$ i2c_address_mode==2?"checked":"" $> > 16 Bit<br>
+	I2C address:
+		<input name="i2c_address" value="<$ i2c_address $>"><br>	
+	I2C data	
+	<input type="radio" name="i2c_data_mode" value="1" <$ i2c_data_mode==1?"checked":"" $> > value: <input name="i2c_value" size="10" value="<$ i2c_transfer $>">
+	<input type="radio" name="i2c_data_mode" value="2" <$ i2c_data_mode==2?"checked":"" $> > string: <input name="i2c_string" size="<$ i2c_max_stringlength $>" maxlength="<$ i2c_max_stringlength $>" value="<$ i2c_string $>"><br>
+		
+	<input type="submit" name="btn_i2c_form" value="Read">
+	<input type="submit" name="btn_i2c_form" value="Write">
+</form>
+</fieldset>
+%} else {
+I2C slave[<$ SlaveNr $>] not found
+%}
+</div>
+</%def>
 
-	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-	if( p_slave != NULL )
+<########################################>
+<# handle i2c formular requests		#>
+<########################################>
+<%def handle_form_i2c>
+<%args>
+int SlaveNr = 0;
+int i2c_address_mode = 1;
+int i2c_data_mode = 1;
+size_t i2c_max_stringlength = 20;
+
+int i2c_address = -1;
+int i2c_value = -1;
+
+string btn_i2c_form = "";
+std::string i2c_string = "";
+
+</%args>
+<%cpp>
+uint8_t recvbuffer[100];
+	
+i2c_transfer = i2c_value;	
+	
+pages_DEBUG_WRITE("handle i2c_form Addr: %u Value: %u", i2c_address, i2c_value);
+
+shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+if( p_slave != NULL )
+{
+	if(btn_i2c_form == "Read")
 	{
+		i2c_transfer = -1;	
+
+		pages_DEBUG_WRITE("i2c_form: read");
+
 		shared_ptr<I2C_Slave> p_i2c_slave = dynamic_pointer_cast<I2C_Slave>(p_slave);
 	
-		if(p_i2c_slave.get() == NULL)return 0;		//no IO_Board object -> exit function
+		if(p_i2c_slave.get() == NULL)
+		{//no IO_Slave object -> exit function
+			pages_ERROR_WRITE("slave[%u] in slaveList is no I2C slave ", SlaveNr);
+			return 0;		//no IO_Board object -> exit function
+		}
 
 		//get data by i2c request		
-		if(	p_i2c_slave->getI2CComm()->i2cOpen() ) i2copen = true;
-					
-		switch(i2c_address_mode){
-			case 1:
+		switch(i2c_address_mode)
+		{
+			case 1:	// 8Bit mode
+				pages_DEBUG_WRITE("8Bit");
 				recvbuffer[0] = (i2c_address & 0xff); //first only	
 				break;
-			case 2:
+			case 2:	// 16Bit mode
+				pages_DEBUG_WRITE("16Bit");
 				recvbuffer[0] = (i2c_address >> 8); //first high
 				recvbuffer[1] = (i2c_address & 0xff); //second low	
 				break;
@@ -86,47 +143,62 @@ if(btn_i2c_form == "Read")
 				recvbuffer[0] = 0;	
 				break;
 		}
- 
-		if(i2copen && p_i2c_slave->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, 1))
-		{
-			i2c_value = recvbuffer[0];
-		}						
-	}
-	
-}
-if(btn_i2c_form == "Write")
-{
 
-	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-	if( p_slave != NULL )
+		pages_DEBUG_WRITE("recvbuffer[0]:0x%x", recvbuffer[0]);
+		pages_DEBUG_WRITE("recvbuffer[1]:0x%x", recvbuffer[1]);
+		
+		if(p_i2c_slave->getI2CComm()->i2cOpen()
+		    && p_i2c_slave->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, 1))
+		{
+			i2c_transfer = recvbuffer[0];	// set variable to received value
+			pages_DEBUG_WRITE("i2c_form: read success: %u", i2c_transfer);
+		}
+		else
+		{
+			pages_ERROR_WRITE("i2c_form: read[%u] failure", i2c_address);
+		}
+	}
+
+
+	if(btn_i2c_form == "Write")
 	{
+		i2c_transfer = -1;	
+
+		pages_DEBUG_WRITE("i2c_form: write[%u]:%u", i2c_address, i2c_value);
+
 		shared_ptr<I2C_Slave> p_i2c_slave = dynamic_pointer_cast<I2C_Slave>(p_slave);
 	
-		if(p_i2c_slave.get() == NULL)return 0;		//no I2C_Slave object -> exit function
+		if(p_i2c_slave.get() == NULL)
+		{//no IO_Slave object -> exit function
+			pages_ERROR_WRITE("slave[%u] in slaveList is no I2C slave ", SlaveNr);
+			return 0;		//no IO_Board object -> exit function
+		}
 
-		//get data by i2c request		
-		if(	p_i2c_slave->getI2CComm()->i2cOpen() ) i2copen = true;
+		//get data by i2c request
 					
-	int length = 0;
+		int length = 0;
 		switch(i2c_address_mode)
 		{
-			case 1:
+			case 1:	//8Bit mode
 				recvbuffer[0] = (i2c_address & 0xff); //first only
-				if(i2c_data_mode == 1){
+				if(i2c_data_mode == 1)
+				{
 					recvbuffer[1] = (i2c_value & 0xff);
 					length = 1;
 				}
-				if(i2c_data_mode == 2){
+				if(i2c_data_mode == 2)
+				{
 					length =  (i2c_string.size()>i2c_max_stringlength)?i2c_max_stringlength:i2c_string.size();
 					memcpy(&recvbuffer[1], i2c_string.c_str(), length);
 					
 				}	
 				
 				break;
-			case 2:
+			case 2: //16Bit mode
 				recvbuffer[0] = (i2c_address >> 8); //first high
 				recvbuffer[1] = (i2c_address & 0xff); //second low
-				if(i2c_data_mode == 1){
+				if(i2c_data_mode == 1)
+				{
 					recvbuffer[2] = (i2c_value & 0xff);
 					length = 1;
 				}
@@ -143,29 +215,218 @@ if(btn_i2c_form == "Write")
 		}
 
  
-		if(i2copen && p_i2c_slave->getI2CComm()->Write_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, length))
+		if(p_i2c_slave->getI2CComm()->i2cOpen()
+		   && p_i2c_slave->getI2CComm()->Write_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, length))
 		{
-		}						
+			i2c_transfer = i2c_value; 
+			pages_DEBUG_WRITE("i2c_form: write[%u] success", i2c_address);
+		}
+		else
+		{
+			pages_ERROR_WRITE("i2c_form: read[%u] failure", i2c_address);
+		}
 	}
-
+	
 }
+else
+{
+	pages_DEBUG_WRITE("Slave[%u] invalid", SlaveNr);
+}
+
 </%cpp>
+</%def>
+
+
+<####################################>
+<# i2c formular for read/write		#>
+<####################################>
+<%def form_i2c_dump>
+
+<%args>
+int SlaveNr = 0;
+int i2c_address_mode = 1;
+int i2c_data_mode = 1;
+
+int i2c_start = -1;
+int i2c_stop = -1;
+
+
+string btn_i2c_form = "";
+std::string i2c_string = "";
+
+</%args>
+<div id="i2c_dump">
+<%cpp>
+pages_DEBUG_WRITE("form_i2c_dump[%i]..[%i]", i2c_start, i2c_stop);
+</%cpp>
+
+<fieldset class=box>
+<legend>I2C dump</legend>
 <form action="<$ request.getUrl()$>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">
 	<input type='hidden' name='SlaveNr' value='<$ SlaveNr $>' />
-	I2C address mode:
-		<input type="radio" name="i2c_address_mode" value="1" <$ i2c_address_mode==1?"checked":"" $> > 8 Bit
-		<input type="radio" name="i2c_address_mode" value="2" <$ i2c_address_mode==2?"checked":"" $> > 16 Bit<br>
-	I2C address:
-		<input name="i2c_address" value="<$ i2c_address $>"><br>	
-	I2C data	
-	<input type="radio" name="i2c_data_mode" value="1" <$ i2c_data_mode==1?"checked":"" $> > value: <input name="i2c_value" size="10" value="<$ i2c_value $>"><br>
-	<input type="radio" name="i2c_data_mode" value="2" <$ i2c_data_mode==2?"checked":"" $> > string: <input name="i2c_string" size="<$ i2c_max_stringlength $>" maxlength="<$ i2c_max_stringlength $>" value="<$ i2c_string $>"><br>
-		
-	<input type="submit" name="btn_i2c_form" value="Read">
-	<input type="submit" name="btn_i2c_form" value="Write">
+	I2C dump:
+		<input name="i2c_start" value="<$$ i2c_start $>">
+		<input name="i2c_stop" value="<$$ i2c_stop $>">
+		<input type="submit" name="btn_i2c_dump" value="Dump">
 </form>
-%} else {
-I2C slave[<$ SlaveNr $>] not found
-%}
+<br>
+<%cpp>
+// check for invalid address
+if(i2c_start < 0 
+    || i2c_stop < 0
+    || (i2c_stop - i2c_start) < 0
+    )
+{
+	pages_ERROR_WRITE("I2C dump start[%i]..stop[%i]: invalid", i2c_start, i2c_stop);
+	return 0;
+}
+</%cpp>
+<table border="1">
+<tr>
+  <td></td>
+  <td>00</td><td>01</td><td>02</td><td>03</td>
+  <td>04</td><td>05</td><td>06</td><td>07</td>
+  <td>08</td><td>09</td><td>0A</td><td>0B</td>
+  <td>0C</td><td>0D</td><td>0E</td><td>0F</td>
+</tr>
+<tr>
+<td><$$ ((i2c_start/16))*16 $></td>
+<%cpp>
+
+int i2c_cur = (i2c_start/16)*16;
+
+//fill begin
+while((i2c_cur%16) != (i2c_start%16))
+{
+</%cpp>
+  <td>xx</td>
+<%cpp>
+i2c_cur++;  
+}
+
+uint8_t recvbuffer[16];
+char hexbuffer[10];
+
+shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+
+shared_ptr<I2C_Slave> p_i2c_slave = dynamic_pointer_cast<I2C_Slave>(p_slave);
+	
+if(p_i2c_slave.get() == NULL)return 0;		//no I2C_Slave object -> exit function
+
+int count;
+int i2c_offset;
+int i2c_row;
+int i2c_column;
+bool need_next_data = true;
+
+
+do
+{
+	i2c_row = i2c_cur/16;
+	i2c_column = i2c_cur%16;
+
+
+	if(need_next_data)
+	{	
+		need_next_data = false;
+		
+		//address mode
+		if(i2c_cur < 256)
+		{
+		  recvbuffer[0] = (i2c_cur & 0xff);
+		  i2c_address_mode = 1;
+		}
+		else
+		{
+		  recvbuffer[0] = (i2c_cur >> 8); //first high
+		  recvbuffer[1] = (i2c_cur & 0xff); //second low
+		  i2c_address_mode = 2;
+		  
+		  pages_DEBUG_WRITE("i2c_cur: %u", i2c_cur);
+		  pages_DEBUG_WRITE("recvbuffer[0]: 0x%x", recvbuffer[0]);
+		  pages_DEBUG_WRITE("recvbuffer[1]: 0x%x", recvbuffer[1]);
+		  }
+
+		//count till end of full 16th byte
+		count = 16 - (i2c_cur%16);
+		i2c_offset = i2c_cur;
+
+		  pages_DEBUG_WRITE("count: %u", count);
+		  pages_DEBUG_WRITE("i2c_offset: %u", i2c_offset);
+
+		//count not more than stop
+		if((i2c_cur + count) > i2c_stop)
+		{
+		  count = (i2c_stop-i2c_cur)+1;
+		}
+		pages_DEBUG_WRITE("count: %u", count);
+
+		if(p_i2c_slave->getI2CComm()->i2cOpen() && p_i2c_slave->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, i2c_address_mode, count))
+		{
+			  pages_DEBUG_WRITE("i2c success");
+		}
+		else
+		{
+			  pages_DEBUG_WRITE("i2c failure");
+			  return 0;
+		}
+	}
+
+	for(int i=0;i<count;i++)
+	{
+		sprintf(hexbuffer,"%02X",(int)(recvbuffer[i2c_cur+i-i2c_offset]));
+</%cpp>
+	  <td><$$ hexbuffer $></td>
+<%cpp>
+	}
+
+	
+	for(int i=count;i<16;i++)
+	{
+</%cpp>
+	  <td></td>
+<%cpp>
+	}
+	
+	
+</%cpp>
+	  <td></td>
+<%cpp>
+
+	for(int i=0;i<count;i++)
+	{
+</%cpp>
+	  <td><$$ (recvbuffer[i2c_cur+i-i2c_offset]) $></td>
+<%cpp>
+	}
+	
+	
+	i2c_cur += count;
+	
+	i2c_column = i2c_cur%16;
+
+	pages_DEBUG_WRITE("i2c_column: %u", i2c_column);
+	
+	if(i2c_column == 0
+	  && (i2c_cur <= i2c_stop))
+	{
+		need_next_data = true;
+		
+		sprintf(hexbuffer,"%02X",(int)((i2c_row + 1)*16));
+</%cpp>
+	</tr>
+	<tr>
+	<td><$$ hexbuffer $></td>
+<%cpp>
+	}
+
+}while(i2c_cur <= i2c_stop);
+
+</%cpp>
+
+
+</tr>
+</table>
+</fieldset>
 </div>
 </%def>

@@ -54,7 +54,21 @@ SET(LOG_SRC ${LOG_SRC}
 )
 UNSET(LOGGING_PREFIX)
 
+SET(LOGGING_PREFIX pages)
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.h
+)
 
+configure_file(
+	${common_cpp_SOURCE_DIR}/include/logging_macros.c.in
+	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+
+SET(LOG_SRC ${LOG_SRC}
+    ${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
+)
+UNSET(LOGGING_PREFIX)
 
 ### ADD INCLUDE DIRS ###
 # add the binary tree to the search path for include files

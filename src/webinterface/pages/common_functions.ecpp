@@ -19,13 +19,13 @@ project = "crumby";
 
 <%def header>
 <div id='header'>
-	<h1>MB_Gateway</h1>
+	<h1>crumby</h1>
 </div> <!-- header -->
 </%def>
 
 <%def footer>
 <div id='footer'>
-	<p> &copy; 2013&nbsp;icke2063</p>
+	<p> &copy; 2013-2015&nbsp;icke2063</p>
 </div> <!-- id footer -->
 </%def>
 
