@@ -52,6 +52,7 @@ using namespace icke2063::MB_Framework;
 
 #ifdef CRUMBY_WEBINTERFACE
 	#include <WebInterface.h>
+	#include <pages_logging_macros.h>
 #endif
 
 using namespace icke2063::MB_Gateway;
@@ -90,7 +91,14 @@ int main(int argc, const char *argv[])
 	    ("i2c_loglevel", po::value<int>(), "I2C loglevel[0..7]")
 	    ;
 #endif
-
+	    
+#ifdef CRUMBY_WEBINTERFACE
+	    
+	desc.add_options()
+	    ("pages_loglevel", po::value<int>(), "pages loglevel[0..7]")
+	    ;
+#endif
+	    
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
@@ -148,10 +156,17 @@ int main(int argc, const char *argv[])
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(sum);
 
 #ifdef CRUMBY_WEBINTERFACE
+	pages_SET_LOG_FN(crumby_logfn);
+	
+	if(vm.count("pages_loglevel")){
+		pages_SET_LOG_LEVEL(vm["pages_loglevel"].as<int>());
+	}
+	
 	std::auto_ptr<WebInterface> webint(new WebInterface());
 #endif
 	
-	while (1) {
+	while (1)
+	{
 		sleep(5);
 	}
 	return 0;
