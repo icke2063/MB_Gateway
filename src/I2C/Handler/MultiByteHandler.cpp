@@ -90,6 +90,8 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 			|| m_sp_i2c_comm->i2cOpen() == false)
 		{
 			i2c_ERROR_WRITE("I2C communication error\n");
+			i2c_DEBUG_WRITE("m_sp_i2c_comm.get(): 0x%x\n", m_sp_i2c_comm.get());
+
 			return 0;
 		}
 

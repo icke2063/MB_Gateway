@@ -41,7 +41,7 @@ public:
 	MultiByteHandler(I2CMB_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm
 			, enum address_mode mode = _8bit
 			, int16_t byte_count = -1) :
-			m_mode(mode), m_byte_count(byte_count)
+			m_mode(mode), m_byte_count(byte_count), m_sp_i2c_comm(sp_i2c_comm)
 	{
 		i2c_INFO_WRITE("MultiByteHandler");
 	}
