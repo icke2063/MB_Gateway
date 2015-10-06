@@ -135,7 +135,7 @@ bool SummerySlave::init(void) {
 	 * data register (byte_count byte)
 	 */
 
-	crumby_INFO_WRITE("init");
+	crumby_INFO_WRITE("SummerySlave init");
 
 	m_mapping = modbus_mapping_new(0, 0, 0, DEFAULT_SUMMERY_COUNT+10);
 
@@ -162,6 +162,8 @@ bool SummerySlave::init(void) {
 	/// add all tmp data handler
 	for (i = 0; i < DEFAULT_SUMMERY_COUNT; i++) {
 		m_input_handlerlist[i] = Single;
+		crumby_INFO_WRITE("m_input_handlerlist[0x%x::%i]:0x%x",&m_input_handlerlist, i, Single.get());
+
 	}
 
 	for(i = 0;i<5;i++){
