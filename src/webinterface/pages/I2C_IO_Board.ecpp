@@ -1,10 +1,20 @@
+<%args>
+int SlaveNr = 0;
+</%args>
 <& common_functions.authentification qparam >
 <& common_functions.doctype qparam >
 <& common_functions.html_head qparam >
 <& common_functions.header qparam >
+<a href='slave_list.html'>SlaveList</a><br>
+%shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+%if( p_slave.get() != NULL )
+%{
 <& form_i2c_io_board qparam>
 <& I2C.form_i2c qparam>
 <& I2C.form_i2c_dump qparam>
+%} else {
+I2C slave[<$ SlaveNr $>] not found
+%}
 <& common_functions.footer qparam >
 
 <%pre>
@@ -66,6 +76,7 @@ std::string button = "";			// button value to
 <div id="ioboard_form">
 	<h1>I2C IO Board</h1>
 %if(info == 1){
+<a href='I2C_IO_Board.html?SlaveNr=<$$ SlaveNr $>'>Normal</a><br>
 <fieldset>
 <legend>IO Board static Info </legend>
 <table>
@@ -88,22 +99,23 @@ std::string button = "";			// button value to
 <tr><td>VIRTUAL_DATA_START</td><td><$ VIRTUAL_DATA_START $></td><td>RAM-Address</td></tr>
 
 <tr><td>EEPROM_SIZE</td><td><$ EEPROM_SIZE $></td><td>EEPROM-Length</td></tr>
-<tr><td>I2C ADDRESS</td><td><$ 0 $></td><td>EEPROM-Address</td></tr>
+<tr><td>I2C ADDRESS</td><td><$ 0 + I2C_BUFFER_SIZE $></td><td>EEPROM-Address</td></tr>
 
-<tr><td>EEPROM_PULSE_TIME</td><td><$ EEPROM_PULSE_TIME $></td><td>EEPROM-Address</td></tr>
+<tr><td>EEPROM_PULSE_TIME</td><td><$ EEPROM_PULSE_TIME + I2C_BUFFER_SIZE $></td><td>EEPROM-Address</td></tr>
 
-<tr><td>EEPROM_DATA_START</td><td><$ EEPROM_DATA_START $></td><td>EEPROM-Address</td></tr>
-<tr><td>EEPROM_FUNC_START</td><td><$ EEPROM_FUNC_START $></td><td>EEPROM-Address</td></tr>
-<tr><td>EEPROM_NAME_START</td><td><$ EEPROM_NAME_START $></td><td>EEPROM-Address</td></tr>
+<tr><td>EEPROM_DATA_START</td><td><$ EEPROM_DATA_START + I2C_BUFFER_SIZE $></td><td>EEPROM-Address</td></tr>
+<tr><td>EEPROM_FUNC_START</td><td><$ EEPROM_FUNC_START + I2C_BUFFER_SIZE $></td><td>EEPROM-Address</td></tr>
+<tr><td>EEPROM_NAME_START</td><td><$ EEPROM_NAME_START + I2C_BUFFER_SIZE $></td><td>EEPROM-Address</td></tr>
 <tr><td>IO_BOARD_MAX_IO_PIN_NAME_LENGTH</td><td><$ IO_BOARD_MAX_IO_PIN_NAME_LENGTH $></td><td>EEPROM-Length</td></tr>
 
 </table>
-</fieldset>
-
-%}//if info
+</fieldset><!-- info --!>
+%}else{//if info
+<a href='I2C_IO_Board.html?SlaveNr=<$$ SlaveNr $>&info=1'>Info</a><br>
+%}
 <%cpp>
 shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-if( p_slave != NULL )
+if( p_slave.get() != NULL )
 {
 	shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 	
@@ -175,9 +187,9 @@ if( p_slave != NULL )
 %	for(int port=0;port<vio_port_count;port++){
 		vio_port[<$ (int)port $>]:<$ (int)vio_port[port] $><br>
 %	}
-%}
 </fieldset>
-%if(button == "Absenden"){
+%}
+%if(button == "submit"){
 	<& handle_request_pin_action qparam >
 	<& handle_func_select qparam >
 %}
@@ -279,7 +291,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	
 %if(vio_count > 12){
 	  <tr>
-	    <td colspan="2"/>
+	    <td colspan="2"></td>
 	    <td colspan="4">
 	      <table border = "1">
 	      <######### pin number/name/status ##########>
@@ -301,7 +313,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	      <tr>
 %for(pin=12;pin<16;pin++){
 		<td>
-			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=((int)glob_write_enable)>
+			<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=((int)glob_write_enable) qparam>
 			<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
 		</td>
 %}
@@ -317,7 +329,7 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 	  <tr>
 %for(pin=1;pin<12;pin=pin+2){
 	    <td>
-		<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=((int)glob_write_enable)>
+		<& print_func_select pinNr=pin func_code=((int)pin_function[pin]) write_enable=((int)glob_write_enable) qparam>
 		<& elem_pin_action	pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])>
 
 	    </td>
@@ -365,8 +377,11 @@ int SlaveNr = 0;
 uint16_t vio_func[];
 </%args>
 <%cpp>
+pages_DEBUG_WRITE("\nhandle_func_select");
 if(request_table_io_board_viopin != "")
 {	
+		
+	pages_DEBUG_WRITE("request_table_io_board_viopin");
 		
 	uint8_t cur_pin;
 	uint8_t cur_func;
@@ -374,7 +389,7 @@ if(request_table_io_board_viopin != "")
 	unsigned char recvbuffer[5];
 	
 	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-	if( p_slave != NULL )
+	if( p_slave.get() != NULL )
 	{
 		shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 	
@@ -436,6 +451,7 @@ int func_code = 0;
 int write_enable = 0;
 int SlaveNr = 0;
 </%args>
+%pages_DEBUG_WRITE("[I2C]print_func_select: Slv: %u;",SlaveNr);
 %if(write_enable >= 0){
 <select name="vio_func" size="1">
 	<option value="<$ func_code == PIN_DISABLED?(255<<8):(uint16_t)((pinNr<<8) | PIN_DISABLED) $>" <$ func_code == PIN_DISABLED?"selected":"" $>>disabled</option>
@@ -467,6 +483,7 @@ int SlaveNr = 0;
 %		case PIN_OW_POWER_PARASITE:
 %		case PIN_OW_POWER_EXTERN:
 %		{	
+			<$ "OW:" $>
 <%cpp>
 			uint8_t recvbuffer[VIRTUAL_DATA_LENGTH];
 			uint8_t ram_virt_data_addr = 0;
@@ -476,7 +493,7 @@ int SlaveNr = 0;
 			ram_virt_data_addr = VIRTUAL_DATA_START + (port_num * (VIRTUAL_PORT_PINCOUNT * VIRTUAL_DATA_LENGTH)) + (pin_num * VIRTUAL_DATA_LENGTH);
 			
 			shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-			if( p_slave != NULL )
+			if( p_slave.get() != NULL )
 			{
 				shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 			
@@ -492,7 +509,8 @@ int SlaveNr = 0;
 				recvbuffer[1] = (ram_virt_data_addr & 0xff); //second low
 			 
 				if(p_io_board->getI2CComm()->i2cOpen()
-				    && p_io_board->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, 2, VIRTUAL_DATA_LENGTH)){
+				    && p_io_board->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, 2, VIRTUAL_DATA_LENGTH))
+				    {
 					for(int i=0;i<VIRTUAL_DATA_LENGTH;i++)
 					{
 </%cpp>
@@ -502,7 +520,11 @@ int SlaveNr = 0;
 				}else{
 					pages_ERROR_WRITE("[I2C]ow read error: Slv: %u; Addr: %u",SlaveNr, ram_virt_data_addr);
 				}		
-			} 
+			}
+			else
+			{
+				pages_ERROR_WRITE("No Slave object[%u]", SlaveNr);
+			}
 		}
 		break;
 		default:
@@ -606,7 +628,7 @@ if(request_table_io_board_viopin != "")
 	}
 	
 	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-	if( p_slave != NULL )
+	if( p_slave.get() != NULL )
 	{
 		shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 	
@@ -744,7 +766,7 @@ int NSlaveNr = -1;	//new slave I2C address
 		recvbuffer[2] = NSlaveNr;
 		
 		shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-		if( p_slave != NULL )
+		if( p_slave.get() != NULL )
 		{
 			shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 		
@@ -793,7 +815,7 @@ int debug = 0;
 	recvbuffer[1] = ((I2C_BUFFER_SIZE + EEPROM_PULSE_TIME) & 0xff); //second low
 	 	
 	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-	if( p_slave != NULL )
+	if( p_slave.get() != NULL )
 	{
 		shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 	
@@ -847,7 +869,7 @@ int debug = 0;
 		recvbuffer[3] = timeout & 0xFF;
 		
 		shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-		if( p_slave != NULL )
+		if( p_slave.get() != NULL )
 		{
 			shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 		
@@ -898,7 +920,7 @@ int write_enable = 0;
 <%cpp>
 		
 		shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-		if( p_slave != NULL )
+		if( p_slave.get() != NULL )
 		{
 			shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 		
@@ -974,7 +996,7 @@ int debug = 0;
 		}
 		
 		shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-		if( p_slave != NULL )
+		if( p_slave.get() != NULL )
 		{
 			shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
 		

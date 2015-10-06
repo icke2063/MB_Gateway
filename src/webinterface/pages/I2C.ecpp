@@ -1,9 +1,19 @@
+<%args>
+int SlaveNr = 0;
+</%args>
 <& common_functions.authentification qparam >
 <& common_functions.doctype qparam >
 <& common_functions.html_head qparam >
 <& common_functions.header qparam >
+<a href='slave_list.html'>SlaveList</a><br>
+%shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+%if( p_slave.get() != NULL )
+%{
 <& form_i2c qparam>
 <& form_i2c_dump qparam>
+%} else {
+I2C slave[<$ SlaveNr $>] not found
+%}
 <& common_functions.footer qparam >
 
 <%pre>
@@ -56,12 +66,6 @@ size_t i2c_max_stringlength = 20;
 
 </%args>
 <div id="i2c_form">
-<%cpp>
-
-shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
-if( p_slave.get() != NULL )
-{	
-</%cpp>
 <& handle_form_i2c qparam >
 <fieldset class="box">
 <legend>I2C R/W</legend>
@@ -80,9 +84,6 @@ if( p_slave.get() != NULL )
 	<input type="submit" name="btn_i2c_form" value="Write">
 </form>
 </fieldset>
-%} else {
-I2C slave[<$ SlaveNr $>] not found
-%}
 </div>
 </%def>
 
@@ -277,7 +278,7 @@ if(i2c_start < 0
     || (i2c_stop - i2c_start) < 0
     )
 {
-	pages_ERROR_WRITE("I2C dump start[%i]..stop[%i]: invalid", i2c_start, i2c_stop);
+	pages_WARN_WRITE("I2C dump start[%i]..stop[%i]: invalid", i2c_start, i2c_stop);
 	return 0;
 }
 </%cpp>

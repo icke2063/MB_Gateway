@@ -29,7 +29,7 @@ uint8_t  slave_type = boost::serialization::singleton<SlaveList>::get_mutable_in
 	<# SlaveAddress #>
 %switch(slave_type){
 %case SLAVE_TYPE_SUMMERY:
-	<td><a href=index.html'><$ slave $></a></td>
+	<td><a href=index.html'><$$ slave $></a></td>
 	<td>Summery Slave</td>
 %	break;
 %#ifdef CRUMBY_I2C_SUPPORT
