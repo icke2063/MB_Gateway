@@ -1,0 +1,274 @@
+#!/usr/bin/perl -w
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright 2015 icke2063 <icke2063@gmail.com>
+
+use strict;
+use warnings;
+use utf8; # this script is written in utf8
+
+
+use Switch;
+use MBclient;
+
+
+use lib $ENV{'MUNIN_LIBDIR'};
+use Munin::Plugin;
+
+use crumby::crumby;
+use crumby::ioboard;
+
+our %crumby;
+our $debug = 0;
+
+
+sub check_env_key
+{
+	my $key = shift;
+
+	if ( not defined $ENV{$key} )
+	{
+		printf "Env variable[%s] not found\n", $key;
+		return -1;
+	}
+
+return 1;
+
+}
+
+#################################################
+#
+# Get pin data(config,values) from crumby hosts
+# - read configuration for projected crumby hosts
+# - get data from projected hosts
+#################################################
+sub read_personal_node_config 
+{
+	if (check_env_key('crumby_n') == 1 ) 
+	{
+		if($debug){printf "crumby_n %i\n", $ENV{crumby_n};}
+	
+
+		for my $crumby ( 1 .. $ENV{'crumby_n'} )
+		{
+			#IP Address
+			if (check_env_key('crumby_'.$crumby.'_IP') == 1 )
+			{
+				my $host_addr = $ENV{'crumby_'.$crumby.'_IP'};#.':'.$ENV{'crumby_'.$crumby.'_PORT'};
+
+				#Port
+				if (check_env_key('crumby_'.$crumby.'_PORT') == 1 )
+	                        {
+					my $host_port = $ENV{'crumby_'.$crumby.'_PORT'};
+	                                if($debug){printf "crumby_%i_host_addr: %s\n", $crumby, $host_addr;}
+					my $m = MBclient->new();
+
+					for my $unit_id ( 0 .. 254 )
+					{
+					    my $SlaveID = crumby::crumby::get_SlaveID($m, $host_addr, $host_port, $unit_id);
+
+					    if($debug && $SlaveID != 0){print "SalveID: $SlaveID\n";}
+					    switch ($SlaveID) 
+					    {
+						case 0x2a	{  read_IOBOARD_node_config($m, $host_addr, $host_port, $unit_id); }
+						else		{ ;; }
+					    }
+					# clean exit
+					$m->close();
+					}
+				}
+			}
+		}
+	}
+}
+
+###############################
+#
+# get data from IOBoard slave
+#
+###############################
+sub read_IOBOARD_node_config 
+{
+    my @params = @_;	#store parameter
+
+    my $mb_ctx = shift;
+    my $host_addr = shift;
+    my $host_port = shift;
+    my $unit_id = shift;
+
+
+    if($debug){printf "read_IOBOARD_node_config\n";}
+
+
+    my $count = crumby::ioboard::MBread_IOBOARD_pin_count(@params);
+
+    if($debug){print "pincount: $count\n";}
+
+    if( $count > 0)
+    {
+	my $w_func;
+	#loop over virtual pins
+	for my $virt_pin ( 0 .. $count-1 )
+	{
+	    $w_func = crumby::ioboard::MBread_IOBOARD_pin_function(@params, $virt_pin);		# get function codes
+
+	    switch ($w_func) 
+	    {
+		case 0x01	{
+				    if($debug){printf "[%i]INPUT ", $virt_pin;}
+				    my $pinvalue = crumby::ioboard::MBread_IOBOARD_viopin(@params, $virt_pin/8, $virt_pin);
+				    if($debug){printf "Value: %i\n", $pinvalue;}
+
+				    add_crumby_hash_entry($host_addr, $unit_id, 42, $w_func, $virt_pin, "Name", $pinvalue);
+
+				}
+		case 0x08	{
+				    if($debug){printf "[%i]OW_ext ", $virt_pin;}
+				}
+		else		{ ;; }
+	    }
+	}
+    }
+}
+
+#####################################
+#
+# add config/value entry to hash list
+#
+#################################### 
+sub add_crumby_hash_entry
+{
+    my $host_addr = shift;
+    my $unit_id = shift;
+    my $unit_type = shift;
+    my $func_code = shift;
+    my $pin_nr = shift;
+
+    my @value_array = @_;
+    push (@{$crumby{ $host_addr }{ $unit_id }{ $unit_type }{ $func_code}{$pin_nr}}, @value_array);
+}
+
+##############################
+#
+# print values of hash list
+#
+##############################
+sub print_crumby_func_config
+{
+
+my $target_func = shift;
+my $function_mode = shift;
+
+if($debug){printf "print_crumby_func_config\n";}
+
+foreach my $host_addr ( keys %crumby )
+{#// loop over crumby devices
+    if($debug){print "crumby IP: $host_addr\n";}
+
+    foreach my $unit_id ( keys %{$crumby{ $host_addr }} )
+    {#// loop over crumby slaves
+	if($debug){print "SlaveID: $unit_id\n";}
+
+        foreach my $unit_type ( keys %{$crumby{ $host_addr }{ $unit_id }} )
+        {
+	    #// loop over slaveTypes
+	    if($debug){print "Slave Type: $unit_type\n";}
+	    foreach my $func_code ( keys %{$crumby{ $host_addr }{ $unit_id }{$unit_type}} )
+	    {
+		#// loop over FunctionCodes
+		if($debug){print "FuncCode: $func_code\n";}
+
+		if($target_func != $func_code)
+		{
+		    # exit function if function code not matching
+		    next;
+		}
+
+	        foreach my $pin_nr ( keys %{$crumby{ $host_addr }{ $unit_id }{$unit_type}{$func_code}} )
+		{
+
+			my @arrayref = @{$crumby{ $host_addr }{ $unit_id }{ $unit_type }{ $func_code}{$pin_nr}};
+
+			my $length = @arrayref;
+
+			if($debug){print "PIN: $pin_nr  Length: $length \n";}
+
+			my $pin_name = "${host_addr}_${unit_id}_${unit_type}_${func_code}_${pin_nr}";
+
+			my $find    = '.';
+			my $replace = '-';
+
+			my $pos = index($pin_name, $find);
+			while ( $pos > -1 )
+			{
+			    substr( $pin_name, $pos, length( $find ), $replace );
+			    $pos = index( $pin_name, $find, $pos + length( $replace ));
+			}
+
+
+			if($function_mode == 0)
+			{#config
+			    print "${pin_name}.label ${pin_name}\n";
+			    print "${pin_name}.draw AREASTACK\n";
+			    print "${pin_name}.min 0\n";
+			    print "${pin_name}.max 1\n";
+			}
+
+			if($function_mode == 1)
+			{#value
+			    print "${pin_name}.value $arrayref[1]\n";
+
+			}
+
+
+#	    switch ($w_func) 
+#	    {
+#		case 0x01	{
+#				    if($debug){printf "[%i]INPUT ", $virt_pin;}
+#				    my $pinvalue = crumby::ioboard::MBread_IOBOARD_viopin(@params, $virt_pin/8, $virt_pin);
+#				    if($debug){printf "Value: %i\n", $pinvalue;}
+#
+#				    add_crumby_hash_entry($host_addr, $unit_id, 42, $w_func, $virt_pin, "Name", $pinvalue);
+#
+#				}
+#		case 0x08	{ printf "OW_ext\n"; }
+#		else		{ ;; }
+#	    }
+		}
+	    }
+	}
+    }
+}
+
+}
+
+read_personal_node_config();
+
+if ( $ARGV[0] and $ARGV[0] eq "config" ) {
+    print "multigraph IO_Board_Func_1\n";
+    print "graph_title Multi IO_Board Func(1)\n";
+    print "graph_vlabel IO_Board Func(1)\n";
+
+    print_crumby_func_config(1, 0);
+    exit 0;;
+}
+
+
+
+print "multigraph IO_Board_Func_1\n";
+print_crumby_func_config(1, 1);
+exit 0;;
+
+
+
