@@ -38,7 +38,7 @@ void printIOBoardSlave(uint8_t address);
 modbus_t *mb = NULL;
 string hostname = "127.0.0.1";
 int hostport = 502;
-int summery = DEFAULT_SUMMERY_ADDR;
+static int summery = DEFAULT_SUMMERY_ADDR;
 
 int main(int argc, char *argv[]) {
 	int ret;
@@ -55,9 +55,10 @@ int main(int argc, char *argv[]) {
 			("address", po::value<uint16_t>(), "modbus register address")
 			("value,v", po::value<uint16_t>(), "value")
 			("slave",po::value<uint16_t>(), "virtual slave")
+			("info", "write slave info")
 			("hostname",po::value<string>(), "MB_Gateway: IP <string>")
 			("hostport",po::value<int>(), "MB_Gateway: Port <int>")
-			("load", "Get Load Info")
+			("load", "Get threadpool load info")
 			("summery",	po::value<int>(), "Summery Slave <int>");
 
 
@@ -71,6 +72,7 @@ int main(int argc, char *argv[]) {
 			("p_perm,7", "print permantent data")
 			("p_func,8", "print pin function")
 			("p_name,9", "print pin name")
+			("p_shared", "print shared memory")
 			;
 
 	desc.add(generic).add(io_board);
@@ -113,6 +115,21 @@ int main(int argc, char *argv[]) {
 			printLoadInfo();
 		}
 		
+		if ( vm.count("info") && vm.count("slave") )
+		{
+		    int ret;
+		    uint16_t value;
+		    uint16_t slave = vm["slave"].as<uint16_t>();
+		    modbus_set_slave(mb, summery);
+		    ret = modbus_read_input_registers(mb, slave, 1, &value);
+		    if (ret > 0) 
+		    {
+			if (value != DEFAULT_SUMMERY_VALUE)
+			{
+			    printSlaveInfo(slave, value);
+			} 
+		    }
+		}
 		
 		//read/write modbus register
 		if (vm.count("slave") && vm.count("address")) {
@@ -169,25 +186,28 @@ void printSummeryList(void) {
 
 	printf("printSummeryList\n");
 
-	if (mb != NULL) {
+	if (mb != NULL)
+	{
+	    for (int i = 0; i < DEFAULT_SUMMERY_COUNT; i++)
+	    {
 		modbus_set_slave(mb, summery);
-		for (int i = 0; i < DEFAULT_SUMMERY_COUNT; i++) {
-			ret = modbus_read_input_registers(mb, i, 1, &value);
-			if (ret > 0) {
-				if (value != DEFAULT_SUMMERY_VALUE) {
-					cout << "\rSummery Slave[0x" << hex << i << "]: 0x" << hex << value << endl;
-					printSlaveInfo(i, value);
-					printf("\n");
-				} else {
-					printf("\r%c", sandbox.c_str()[i % 3]);
-					fflush(stdout);
-				}
-			} else {
-
-			}
+		ret = modbus_read_input_registers(mb, i, 1, &value);
+		if (ret > 0) 
+		{
+		    if (value != DEFAULT_SUMMERY_VALUE) 
+		    {
+			cout << "\rSummery Slave[0x" << hex << i << "]: 0x" << hex << value << endl;
+			fflush(stdout);
+		    }
+		    else
+		    {
+			printf("\r%c", sandbox.c_str()[i % 3]);
+			fflush(stdout);
+		    }
 		}
-		printf("\r");
-		fflush(stdout);
+	    }
+	    printf("\r");
+	    fflush(stdout);
 	}
 }
 
@@ -234,7 +254,7 @@ void printI2CSlave(uint8_t address) {
 
 void printIOBoardSlave(uint8_t address) {
 	int ret;
-	uint16_t value[32];
+	uint16_t value[512];
 	uint8_t pincount;
 
 	printf("printIOBoardSlave[%x]\n",address);
@@ -244,18 +264,22 @@ void printIOBoardSlave(uint8_t address) {
 
 		printf("RAM:\n");
 		//get ID
-		ret = modbus_read_registers(mb, 0, 1, value);
-		if (ret > 0){
 
-
-			if(vm.count("p_slaveID")>0){
-				printf("[%i]\tSlaveID:\t\t0x%x\n", 0, value[0]);
-			}
-		} else {
+		if(vm.count("p_slaveID")>0)
+		{
+		    ret = modbus_read_registers(mb, 0, 1, value);
+		    if (ret > 0)
+		    {
+			printf("[%i]\tSlaveID:\t\t0x%x\n", 0, value[0]);
+		    }
+		    else 
+		    {
 			printf("Cannot read slaveID\n");
+		    }
 		}
 		//get Version
-		if(vm.count("p_version")>0){
+		if(vm.count("p_version")>0)
+		{
 			ret = modbus_read_registers(mb, VERSION_START / 2,
 				((VERSION_LENGTH / 2) + (VERSION_LENGTH % 2)), value);
 			value[ret < 32 ? ret : 31] = '\0';
@@ -272,15 +296,18 @@ void printIOBoardSlave(uint8_t address) {
 
 		//virtual io count
 		ret = modbus_read_registers(mb, VIRTUAL_IO_COUNT / 2, 1, value);
-		if (ret > 0) {
-			pincount = value[0] & 0xFF;
-			if(vm.count("p_count")>0){
-				printf("[%i]\tvirt. IO count:\t\t0x%x\n", VIRTUAL_IO_COUNT / 2,pincount);
-			}
+		if (ret > 0) 
+		{
+		    pincount = value[0] & 0xFF;
+		    if(vm.count("p_count")>0)
+		    {
+		        printf("[%i]\tvirt. IO count:\t\t0x%x\n", VIRTUAL_IO_COUNT / 2,pincount);
+		    }
 		}
 
 		//virtual IO port
-		if(vm.count("p_port")>0){
+		if(vm.count("p_port")>0)
+		{
 			ret = modbus_read_registers(mb, VIRTUAL_IO_START / 2,
 				(pincount / 8) + ((pincount % 8) > 0 ? 1 : 0), value);
 
@@ -289,9 +316,10 @@ void printIOBoardSlave(uint8_t address) {
 			}
 		}
 		/// add all tmp data handler
-		if(vm.count("p_tmp")>0){
+		if(vm.count("p_tmp")>0)
+		{
 			for (int i = 0; i < pincount; i++) {
-				uint16_t handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
+				uint16_t handler_address = (VIRTUAL_DATA_START / 2) + (i * (VIRTUAL_DATA_LENGTH/2));
 				ret = modbus_read_registers(mb, handler_address, VIRTUAL_DATA_LENGTH/2, value);
 				if (ret > 0){
 
@@ -305,24 +333,27 @@ void printIOBoardSlave(uint8_t address) {
 		}
 
 		printf("EEPROM:\n");
-		if(vm.count("p_i2c")>0){
+		if(vm.count("p_i2c")>0)
+		{
 			//get I2C Addi
 			ret = modbus_read_registers(mb, I2C_BUFFER_SIZE / 2, 1, value);
 			if (ret > 0) {
-				printf("[%i]\tI2C Addr:\t\t0x%04x\n", I2C_BUFFER_SIZE / 2, htobe16(value[0]));
+				printf("[%i]\tI2C Addr:\t\t0x%02x\n", I2C_BUFFER_SIZE / 2, htobe16(value[0]) & 0xFF);
 
 			}
 		}
 		/// read perm data handler
-		if(vm.count("p_perm")>0){
+		if(vm.count("p_perm")>0)
+		{
 			for (int i = 0; i < pincount; i++) {
 				uint16_t handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START)
 						/ 2) + (i * 2);
 				ret = modbus_read_registers(mb, handler_address, EEPROM_DATA_LENGTH/2, value);
 				if (ret > 0){
 					printf("[%i]\tperm_data[0x%x]:\t\t", handler_address, i);
-					for (int i = 0; i < ret; i++) {
-						printf("0x%02X 0x%02X ",value[i] >> 8, value[i] & 0xFF);
+					for (int i = 0; i < ret; i++) 
+					{
+					    printf("0x%02X 0x%02X ", value[i] >> 8, value[i] & 0xFF);
 					}
 					printf("\n");
 				}
@@ -397,7 +428,31 @@ void printIOBoardSlave(uint8_t address) {
 					printf("no name\n");
 				}
 			}
-
 		}
+
+
+		/// print shared memory
+		if (vm.count("p_shared") > 0) 
+		{
+		    printf("\nshared_data:\n");
+
+		    for(int e = 0; e < EEPROM_SHARED_DATA_LENGTH/8; e++)
+		    {
+		    uint16_t handler_address =
+					((I2C_BUFFER_SIZE + EEPROM_SHARED_DATA_START) / 2) + (8 * e);
+
+		    ret = modbus_read_registers(mb, handler_address, 8, value);
+		    if (ret > 0)
+		    {
+			printf( "[0x%x]\t\t", handler_address );
+			for (int i = 0; i < ret; i++) 
+			{
+			    printf("0x%02X 0x%02X ",  value[i] >> 8, value[i] & 0xFF);
+			}
+			printf("\n");
+		    }
+		    }
+		}
+
 	}
 }
