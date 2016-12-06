@@ -13,22 +13,18 @@
 #include <handler/MultiRegisterHandler.h>
 #include <handler/SRegisterHandler.h>
 
+#include <chrono>
+
 #include "boost/serialization/singleton.hpp"
 #include <HandlerList.h>
 #include <SlaveList.h>
-
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-using namespace std;
-#else
-using namespace boost;
-#endif
 
 #include <crumby_logging_macros.h>
 
 namespace icke2063 {
 namespace MB_Gateway {
 
-SummerySlave::SummerySlave(shared_ptr<threadpool::ThreadPool> delayed_pool, uint8_t SlaveAddr, unsigned int timeout) :
+SummerySlave::SummerySlave(std::shared_ptr<threadpool::ThreadPool> delayed_pool, uint8_t SlaveAddr, unsigned int timeout) :
 		MB_Gateway::VirtualRTUSlave(SlaveAddr),m_running(true), m_timeout(timeout),m_delayed_pool(delayed_pool){
 
 	
@@ -57,7 +53,7 @@ if(m_delayed_pool.get()){
     crumby_INFO_WRITE("addFunctor");
   struct timeval now;
   gettimeofday(&now,NULL);
-  m_delayed_pool->delegateDelayedFunctor( shared_ptr<threadpool::DelayedFunctorInt>( new threadpool::DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
+  m_delayed_pool->delegateDelayedFunctor( std::shared_ptr<threadpool::DelayedFunctorInt>( new threadpool::DelayedFunctor( new SummerySlaveFunctor(shared_from_this()), &now) ));
 
 }
   
@@ -72,16 +68,16 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 	  return;
 	}
 	
-	shared_ptr<MBVirtualRTUSlave> curSlave;
+	std::shared_ptr<MBVirtualRTUSlave> curSlave;
 	crumby_DEBUG_WRITE("Summery Thread");
 
 	if (m_slave->m_running) 
 	{
 		//p_scanner_thread->yield();
-		unique_lock<mutex> lock(m_slave->m_Mutex);
+		std::unique_lock<std::mutex> lock(m_slave->m_Mutex);
 
 		if (m_slave->m_Condition.wait_for(lock,
-				chrono::milliseconds(m_slave->m_timeout)) == cv_status::timeout ) 
+				std::chrono::milliseconds(m_slave->m_timeout)) == std::cv_status::timeout )
 		{
 			crumby_DEBUG_WRITE("scan slaves...");
 			crumby_DEBUG_WRITE("slavelist size: %u",boost::serialization::singleton<SlaveList>::get_mutable_instance().getList()->size());
@@ -121,7 +117,7 @@ void SummerySlave::SummerySlaveFunctor::functor_function(void) {
 		  gettimeofday(&now,NULL);
 		  now.tv_usec += 100;
 
-		 m_slave->m_delayed_pool->delegateDelayedFunctor(shared_ptr<threadpool::DelayedFunctorInt>(new threadpool::DelayedFunctor(new SummerySlaveFunctor(m_slave), &now)));
+		 m_slave->m_delayed_pool->delegateDelayedFunctor(std::shared_ptr<threadpool::DelayedFunctorInt>(new threadpool::DelayedFunctor(new SummerySlaveFunctor(m_slave), &now)));
 
 
 	}
@@ -140,19 +136,19 @@ bool SummerySlave::init(void) {
 	m_mapping = modbus_mapping_new(0, 0, 0, DEFAULT_SUMMERY_COUNT+10);
 
 	///add handler
-	shared_ptr<MultiRegisterHandler> Multi;
-	shared_ptr<SRegisterHandler> Single;
+	std::shared_ptr<MultiRegisterHandler> Multi;
+	std::shared_ptr<SRegisterHandler> Single;
 
 	/*
 	 * create new specialist handler if not already in list
 	 */
 
 	if (Multi.get() == NULL) {
-		Multi = shared_ptr<MultiRegisterHandler>(new MultiRegisterHandler(m_mapping)); //virtual IO Port handler
+		Multi = std::shared_ptr<MultiRegisterHandler>(new MultiRegisterHandler(m_mapping)); //virtual IO Port handler
 	}
 
 	if (Single.get() == NULL) {
-		Single = shared_ptr<SRegisterHandler>(new SRegisterHandler(m_mapping)); //virtual IO Port handler
+		Single = std::shared_ptr<SRegisterHandler>(new SRegisterHandler(m_mapping)); //virtual IO Port handler
 	}
 
 	/**

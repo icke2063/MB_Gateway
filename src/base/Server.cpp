@@ -28,14 +28,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-  #include <mutex>
-  using namespace std;
-#else
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/locks.hpp>
-  using namespace boost;
-#endif
+/** C++11 */
+#include <mutex>
 
 
 #include <sys/select.h>
@@ -52,27 +46,27 @@
 namespace icke2063 {
 namespace MB_Gateway {
 
-Server::Server(uint16_t port, shared_ptr<threadpool::ThreadPool> ext_pool):
+Server::Server(uint16_t port, std::shared_ptr<threadpool::ThreadPool> ext_pool):
 		MBServer(port),
 		m_server_running(true),m_server_socket(-1){
 
 	modbus_NOTICE_WRITE("Modbus TCP Server@%i",m_port);
 
-	m_conn_lock.reset(new mutex());
+	m_conn_lock.reset(new std::mutex());
 
 	if(ext_pool.get()){
 	  pool = ext_pool;
 	  modbus_INFO_WRITE("Server use extern ThreadPool");
 	} else {
 	  modbus_INFO_WRITE("Server use intern ThreadPool");
-	  pool = shared_ptr<threadpool::ThreadPool>(new threadpool::ThreadPool());
+	  pool = std::shared_ptr<threadpool::ThreadPool>(new threadpool::ThreadPool());
 	  pool->setHighWatermark(5);
 	}
 	
 
 	try {
-		m_server_thread.reset(new thread(&Server::waitForConnection, this));	// create new scheduler thread
-		m_conn_handler_thread.reset(new thread(&Server::connection_handler, this));
+		m_server_thread.reset(new std::thread(&Server::waitForConnection, this));	// create new scheduler thread
+		m_conn_handler_thread.reset(new std::thread(&Server::connection_handler, this));
 	} catch (std::runtime_error& e) {
 		modbus_CRIT_WRITE("Cannot create Server/Connection threads: %s\n",e.what());
 		exit(0);
@@ -150,10 +144,10 @@ void Server::waitForConnection(void){
 			modbus_INFO_WRITE("modbus_tcp_accept:%i",modbus_get_socket(ctx_tmp));
 
 			if(m_conn_lock.get() != NULL){
-				lock_guard<mutex> lock(*m_conn_lock.get());
+				std::lock_guard<std::mutex> lock(*m_conn_lock.get());
 
 				try{
-					shared_ptr<Connection> tmp(new Connection(ctx_tmp));
+					std::shared_ptr<Connection> tmp(new Connection(ctx_tmp));
 					openConnections.push_back(tmp);
 				}catch(std::runtime_error& e){
 					modbus_ERROR_WRITE("Cannot create Connection:%s", e.what());
@@ -176,7 +170,7 @@ void Server::connection_handler (void){
     int maxFD=0;
     struct timeval tv;
     int retval;
-    std::list<shared_ptr<MB_Framework::MBConnection> >::iterator conn_it;
+    std::list<std::shared_ptr<MB_Framework::MBConnection> >::iterator conn_it;
 
     while (m_server_running)
     {
@@ -189,12 +183,12 @@ void Server::connection_handler (void){
 
 
 		if(m_conn_lock.get() != NULL){
-			lock_guard<mutex> lock(*m_conn_lock.get());
+			std::lock_guard<std::mutex> lock(*m_conn_lock.get());
 
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				shared_ptr<Connection> curConn =  dynamic_pointer_cast<Connection> (*conn_it);
+				std::shared_ptr<Connection> curConn =  std::dynamic_pointer_cast<Connection> (*conn_it);
 
 				if(curConn.get() && curConn->getStatus() == MB_Framework::MBConnection::open){//add open connection into set
 					FD_SET(modbus_get_socket(curConn->getConnInfo()), &rfds);
@@ -204,7 +198,7 @@ void Server::connection_handler (void){
 
 				if(curConn->getStatus() == MB_Framework::MBConnection::closed){//remove closed connection
 					modbus_DEBUG_WRITE("remove Connection[%d]\n",modbus_get_socket(curConn->getConnInfo()));
-					//delete curConn; //done by shared_ptr
+					//delete curConn; //done by std::shared_ptr
 					conn_it = openConnections.erase(conn_it);
 					continue;
 				}
@@ -234,7 +228,7 @@ void Server::connection_handler (void){
 			conn_it = openConnections.begin();
 
 			while(conn_it != openConnections.end()){//loop over all connections
-				shared_ptr<Connection> curConn =  dynamic_pointer_cast<Connection>(*conn_it);
+				std::shared_ptr<Connection> curConn =  std::dynamic_pointer_cast<Connection>(*conn_it);
 				if(curConn.get() && FD_ISSET(modbus_get_socket( curConn->getConnInfo() ), &rfds)){//handle connections with incoming data
 					curConn -> setStatus(MB_Framework::MBConnection::busy);	//mark current connection as busy (handle current request)
 					modbus_DEBUG_WRITE("data on socket[%d]\n",modbus_get_socket( curConn->getConnInfo()));

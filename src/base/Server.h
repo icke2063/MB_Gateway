@@ -30,18 +30,9 @@
 
 #include <build_options.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	#include <memory>
-	#include <thread>
-
-	#define SERVER_H_NS std
-
-#else
-	#include <boost/thread.hpp>
-	#include <boost/scoped_ptr.hpp>
-
-	#define SERVER_H_NS boost
-  #endif
+/** C++ */
+#include <memory>
+#include <thread>
 
 //MB_Framework
 #include <MBServer.h>
@@ -54,7 +45,7 @@ namespace MB_Gateway {
 class Server :
 	public icke2063::MB_Framework::MBServer {
 public:
-	Server(uint16_t port, SERVER_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> ext_pool);
+	Server(uint16_t port, std::shared_ptr<icke2063::threadpool::ThreadPool> ext_pool);
 	virtual ~Server();
 
 private:
@@ -73,14 +64,14 @@ private:
 	void connection_handler(void);
 
 
-	std::auto_ptr<SERVER_H_NS::thread> m_server_thread;
-	std::auto_ptr<SERVER_H_NS::thread> m_conn_handler_thread;
+	std::unique_ptr<std::thread> m_server_thread;
+	std::unique_ptr<std::thread> m_conn_handler_thread;
 
 
 	bool m_server_running;
 	int m_server_socket;
 
-	SERVER_H_NS::shared_ptr<icke2063::threadpool::ThreadPool> pool;
+	std::shared_ptr<icke2063::threadpool::ThreadPool> pool;
 
 };
 

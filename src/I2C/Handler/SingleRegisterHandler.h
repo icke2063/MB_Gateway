@@ -18,7 +18,7 @@ namespace I2C {
 
 class SingleRegisterHandler: public MultiByteHandler {
 public:
-	SingleRegisterHandler(I2CMB_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm, enum address_mode mode = _8bit) :
+	SingleRegisterHandler(std::shared_ptr<I2C_Comm> sp_i2c_comm, enum address_mode mode = _8bit) :
 			MultiByteHandler(sp_i2c_comm, mode, 2) {
 		i2c_INFO_WRITE("SingleRegisterHandler");
 	}

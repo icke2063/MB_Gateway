@@ -16,6 +16,10 @@
 
 #include "boost/serialization/singleton.hpp"
 #include <boost/iterator/iterator_concepts.hpp>
+
+#include "MBHandlerInt.h"
+using namespace icke2063::MB_Framework;
+
 #include "MultiByteHandler.h"
 #include "SingleRegisterHandler.h"
 #include "HolRegHandler.h"
@@ -36,7 +40,7 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-VersionHandler::VersionHandler(I2CMB_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm) :
+VersionHandler::VersionHandler(std::shared_ptr<I2C_Comm> sp_i2c_comm) :
 		MultiByteHandler(sp_i2c_comm, _16bit, -1) {
 	i2c_INFO_WRITE("VersionHandler");
 	enableReadInpReg = false; //disable input register access

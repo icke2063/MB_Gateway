@@ -35,16 +35,11 @@
 
 #include <mb_common.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	using namespace std;
-#else
-	using namespace boost;
-	#endif
-
 //boost
 #include <boost/serialization/singleton.hpp>
 
 #include <SlaveList.h>
+#include <MBVirtualRTUSlave.h>
 #include <MBHandlerInt.h>
 #include <HandlerParam.h>
 
@@ -80,9 +75,9 @@ Connection::~Connection() {
 	}
 }
 
-bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_slave,
-		enum handleQuery_mode mode) {
-
+bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tmp_slave,
+		enum handleQuery_mode mode) 
+{
 	/* var for query informations */
 	int offset;
 	uint8_t slave;
@@ -101,7 +96,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	function = query[offset];
 	address = (query[offset + 1] << 8) + query[offset + 2];
 	cur_address = address;
-	std::map<uint16_t,shared_ptr<MB_Framework::MBHandlerInt> > *cur_handlerlist = NULL;
+	MB_Framework::m_handlerlist_type *cur_handlerlist = NULL;
 
 	modbus_INFO_WRITE("function[0x%x]", function);
 	modbus_INFO_WRITE("address[0x%x]", address);
@@ -216,7 +211,7 @@ bool Connection::handleQuery(uint8_t* query, shared_ptr<VirtualRTUSlave> tmp_sla
 	return true;
 }
 void Connection::ConnFunctor::functor_function(void) {
-	CONNECTION_H_NS::shared_ptr<Connection> tmp_conn;
+	std::shared_ptr<Connection> tmp_conn;
 	uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
 	int rc; /* mb return code */
 
@@ -257,8 +252,9 @@ void Connection::ConnFunctor::functor_function(void) {
 			///lock list access @todo use shared lock
 			//std::lock_guard<std::mutex> lock(*(boost::serialization::singleton<SlaveList>::get_mutable_instance().getLock()->getMutex().get()));
 
-			shared_ptr<VirtualRTUSlave> tmp_slave =
-					dynamic_pointer_cast<VirtualRTUSlave>(boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave));
+			std::shared_ptr<VirtualRTUSlave> tmp_slave =
+					std::dynamic_pointer_cast<VirtualRTUSlave>(
+							boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(slave));
 			modbus_DEBUG_WRITE("slave[0x%x]:0x%x", slave, tmp_slave.get());
 
 

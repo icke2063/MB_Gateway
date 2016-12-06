@@ -10,19 +10,12 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include <build_options.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-  #include <memory>
-  using namespace std;
-#else
-  #include <boost/scoped_ptr.hpp>
-  using namespace boost;
-#endif
-
-
-#include <sys/time.h>
+/** C++11 */
+#include <memory>
 
  //boost
 #include "boost/serialization/singleton.hpp"
@@ -124,7 +117,7 @@ int main(int argc, const char *argv[])
 		threadpool_SET_LOG_LEVEL(vm["tp_loglevel"].as<int>());
 	}
 
-	shared_ptr<icke2063::threadpool::ThreadPool> pool(new icke2063::threadpool::ThreadPool(5));
+	std::shared_ptr<icke2063::threadpool::ThreadPool> pool(new icke2063::threadpool::ThreadPool(5));
 	pool->setHighWatermark(10);
 	pool->setLowWatermark(3);
 	
@@ -151,7 +144,7 @@ int main(int argc, const char *argv[])
 	std::auto_ptr<icke2063::MB_Gateway::I2C::I2C_Scanner> scanner(new icke2063::MB_Gateway::I2C::I2C_Scanner(i2c_master_path, 10000));
 #endif
 
-	shared_ptr<SummerySlave> sum = shared_ptr<SummerySlave>(new SummerySlave(pool,255));
+	std::shared_ptr<SummerySlave> sum = std::shared_ptr<SummerySlave>(new SummerySlave(pool,255));
 	sum->startFunctor();
 	boost::serialization::singleton<SlaveList>::get_mutable_instance().addSlave(sum);
 

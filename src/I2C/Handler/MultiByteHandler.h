@@ -12,13 +12,8 @@
 
 #include <build_options.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	#include <memory>
-	#define I2CMB_H_NS std
-#else
-	#include <boost/shared_ptr.hpp>
-	#define I2CMB_H_NS boost
-#endif
+/** C++11 */
+#include <memory>
 
 #include <handler/DefaultHandler.h>
 #include <I2CComm.h>
@@ -38,7 +33,7 @@ enum address_mode {
 class MultiByteHandler:
 	public DefaultHandler {
 public:
-	MultiByteHandler(I2CMB_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm
+	MultiByteHandler(std::shared_ptr<I2C_Comm> sp_i2c_comm
 			, enum address_mode mode = _8bit
 			, int16_t byte_count = -1) :
 			m_mode(mode), m_byte_count(byte_count), m_sp_i2c_comm(sp_i2c_comm)
@@ -53,7 +48,7 @@ public:
 	virtual int handleWriteAccess(icke2063::MB_Framework::MBHandlerParam *param);
 
 protected:
-	I2CMB_H_NS::shared_ptr<I2C_Comm> m_sp_i2c_comm;
+	std::shared_ptr<I2C_Comm> m_sp_i2c_comm;
 private:
 
 	enum address_mode m_mode;

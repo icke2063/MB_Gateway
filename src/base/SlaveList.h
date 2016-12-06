@@ -26,15 +26,8 @@
 
 #include <build_options.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	#include <memory>
-
-	#define SLAVELIST_H_NS std
-#else
-	#include <boost/shared_ptr.hpp>
-
-	#define SLAVELIST_H_NS boost
-#endif
+/** C++11 */
+#include <memory>
 
 #include <MBSlaveList.h>
 #include <MBVirtualRTUSlave.h>
@@ -49,9 +42,9 @@ public:
 	SlaveList();
 	virtual ~SlaveList();
 
-	virtual bool addSlave(SLAVELIST_H_NS::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> newSlave);
-	virtual SLAVELIST_H_NS::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> removeSlave(uint8_t index);
-	virtual SLAVELIST_H_NS::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> getSlave(uint8_t index);
+	virtual bool addSlave(std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> newSlave);
+	virtual std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> removeSlave(uint8_t index);
+	virtual std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> getSlave(uint8_t index);
 
 	//shared_ptr<Mutex> getLock();
 };

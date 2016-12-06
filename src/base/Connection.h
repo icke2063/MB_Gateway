@@ -26,18 +26,9 @@
 
 #include <build_options.h>
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	#include <memory>
-	#include <thread>
 
-	#define CONNECTION_H_NS std
-#else
-	#include <boost/enable_shared_from_this.hpp>
-	#include <boost/shared_ptr.hpp>
-
-	#define CONNECTION_H_NS boost
-#endif
-
+#include <memory>
+#include <thread>
 
 
 #include <MBConnection.h>
@@ -65,13 +56,13 @@ class Connection:
 	class ConnFunctor:
 		public icke2063::threadpool::Functor{
 	public:
-		ConnFunctor(CONNECTION_H_NS::shared_ptr<Connection> conn):
+		ConnFunctor(std::shared_ptr<Connection> conn):
 		    wp_conn(conn){}
 		virtual ~ConnFunctor(){}
 
 	private:
 		virtual void functor_function(void);
-		CONNECTION_H_NS::weak_ptr<Connection> wp_conn;
+		std::weak_ptr<Connection> wp_conn;
 	};
 
 	friend class ConnFunctor;	//ok lets play together ;-)
@@ -97,7 +88,7 @@ private:
 	 * @param mode:			handle mode (read, write, check)
 	 * @return
 	 */
-	bool handleQuery(uint8_t* query, CONNECTION_H_NS::shared_ptr<VirtualRTUSlave> tmp_slave, enum handleQuery_mode mode);
+	bool handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tmp_slave, enum handleQuery_mode mode);
 
 	/* connection information from libmodbus library */
 	modbus_t *p_ctx;

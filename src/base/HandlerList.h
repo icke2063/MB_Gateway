@@ -19,7 +19,7 @@ class HandlerList:
 	public icke2063::MB_Framework::MBHandlerList {
 public:
 	HandlerList() {
-		m_handlerlist_lock.reset(new MBHL_NS::mutex());
+		m_handlerlist_lock.reset(new std::mutex());
 
 	}
 	virtual ~HandlerList() {}

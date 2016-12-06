@@ -7,10 +7,12 @@
  * Detailed description of file.
  */
 
-#include "handler/MultiRegisterHandler.h"
-#include <HandlerParam.h>
 #include <string.h>
 
+#include "handler/MultiRegisterHandler.h"
+#include <modbus_logging_macros.h>
+
+#include <HandlerParam.h>
 #include <mb_common.h>
 
 namespace icke2063 {

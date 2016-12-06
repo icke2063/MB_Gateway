@@ -25,23 +25,18 @@
 namespace icke2063 {
 namespace MB_Gateway {
 
-#ifndef ICKE2063_CRUMBY_NO_CPP11
-	using namespace std;
-#else
-	using namespace boost;
-#endif
-  
 
 #include "crumby_logging_macros.h"
 
 SlaveList::SlaveList(){
   /* initialisation of lock object */
-  m_slavelist_lock = shared_ptr<mutex>(new mutex());
+  m_slavelist_lock = std::shared_ptr<std::mutex>(new std::mutex());
 }
 SlaveList::~SlaveList(){}  
   
-bool SlaveList::addSlave(shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> newSlave) {
-    shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> curSlave = dynamic_pointer_cast<icke2063::MB_Framework::MBVirtualRTUSlave>(newSlave);
+bool SlaveList::addSlave(std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> newSlave) {
+    std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> curSlave =
+    		std::dynamic_pointer_cast<icke2063::MB_Framework::MBVirtualRTUSlave>(newSlave);
     uint8_t index;
 
     if(curSlave.get() == NULL)
@@ -49,9 +44,9 @@ bool SlaveList::addSlave(shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> n
       return false;
     }
     index = curSlave->getSlaveAddr();
-    lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
+    std::lock_guard<std::mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
-    std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
+    std::map<uint8_t, std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave already added?
     if (it == m_slavelist.end())
     {
 	    crumby_INFO_WRITE("add new Slave[%u]\n", index);
@@ -66,11 +61,11 @@ bool SlaveList::addSlave(shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> n
     return false;
 }
 
-shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
-	shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> result;
-	lock_guard<mutex> lock(*m_slavelist_lock.get()); //lock slavelist
+std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::removeSlave(uint8_t index) {
+	std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> result;
+	std::lock_guard<std::mutex> lock(*m_slavelist_lock.get()); //lock slavelist
 
-	std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
+	std::map<uint8_t, std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
 	if (it != m_slavelist.end()) {
 		result = it->second; //get reference
 		m_slavelist.erase(it); //remove from list
@@ -78,16 +73,16 @@ shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::removeSlave(uin
 	return result;
 }
 
-shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::getSlave(uint8_t index) {
-    shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> result;
-	std::map<uint8_t, shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
+std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> SlaveList::getSlave(uint8_t index) {
+    std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> result;
+	std::map<uint8_t, std::shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> >::iterator it = m_slavelist.find(index); //slave in list?
 	if (it != m_slavelist.end()) {
 		return it->second; //get pointer
 	}
 	return result;
 }
 
-//shared_ptr<Mutex> SlaveList::getLock(){return m_slavelist_lock;}
+//std::shared_ptr<Mutex> SlaveList::getLock(){return m_slavelist_lock;}
 
 } /* namespace MB_Gateway */
 } /* namespace icke2063 */
