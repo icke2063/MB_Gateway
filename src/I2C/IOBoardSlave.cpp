@@ -186,10 +186,11 @@ bool IOBoard_Slave::init(void) {
 	std::list<shared_ptr<MB_Framework::MBHandlerInt> > *phandlerlist = &(boost::serialization::singleton<
 			HandlerList>::get_mutable_instance().m_handlerlist);
 
+	/** loop over complete Handlerlist and try to reuse already created ones */
 	std::list<shared_ptr<MB_Framework::MBHandlerInt> >::iterator handler_it = phandlerlist->begin(); // get first handler
-
-	while (handler_it != phandlerlist->end()) {
-	  shared_ptr<MB_Framework::MBHandlerInt> listitem =*handler_it;
+	while ( handler_it != phandlerlist->end() )
+	{
+	    shared_ptr<MB_Framework::MBHandlerInt> listitem =*handler_it;
 		/* MultiByte */
 		if (Multi.get() == nullptr ) {
 			Multi = dynamic_pointer_cast<MultiByteHandler>(listitem);
@@ -249,7 +250,7 @@ bool IOBoard_Slave::init(void) {
 
 		TmpData.reset(new DataHandler(m_sp_i2c_comm));
 		TmpData->setRange((VIRTUAL_DATA_START / 2),
-				(VIRTUAL_DATA_START / 2) + (pincount * 2) - 1);
+				(VIRTUAL_DATA_START / 2) + (pincount * (VIRTUAL_DATA_LENGTH/2)) - 1);
 
 		PermData.reset(new DataHandler(m_sp_i2c_comm));
 		PermData->setRange(((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2),
@@ -258,7 +259,10 @@ bool IOBoard_Slave::init(void) {
 	/**
 	 * create mapping
 	 */
+	uint16_t startaddr = 0;
+	uint16_t endaddr = 0;
 
+	/** RAM */
 	m_holding_handlerlist[0] = HoldingRO; /// SlaveID
 	m_holding_handlerlist[1] = HoldingRO; /// EEPROM Write
 
@@ -270,38 +274,58 @@ bool IOBoard_Slave::init(void) {
 	m_holding_handlerlist[(VIRTUAL_IO_START/2)+1] = Holding; /// virtual IO Port handler
 
 	/// add all tmp data handler
-	for (i = 0; i < pincount; i++) {
-		handler_address = (VIRTUAL_DATA_START / 2) + (i * 2);
-		m_holding_handlerlist[handler_address] = TmpData;
-		i2c_DEBUG_WRITE("add TmpData handler[0x%x]", handler_address);
+	{
+	    startaddr = (VIRTUAL_DATA_START / 2);
+	    endaddr = startaddr + ((pincount*(VIRTUAL_DATA_LENGTH/2)) - 1);
+	    std::shared_ptr<MBBlockInt> funcblock(new MBBlockInt( TmpData, startaddr, endaddr ));
+
+	    m_holding_blocklist.push_back( funcblock );
+	    i2c_DEBUG_WRITE("add Tmpdata handlerblock[%i..%i]", funcblock->getStartAddr(), funcblock->getEndAddr());
 	}
 
-	/// eeprom
+	/** eeprom */
 	m_holding_handlerlist[I2C_BUFFER_SIZE / 2] = Holding; /// I2C Address
 
-	/// add all perm data handler
-	for (i = 0; i < pincount; i++) {
-		handler_address = ((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2) + (i * 2);
-		m_holding_handlerlist[handler_address] = PermData;
-		i2c_DEBUG_WRITE("add PermData handler[0x%x]", handler_address);
-	}
-
 	/// add all function handler
-	for (i = 0; i < pincount; i++) {
-		handler_address = (I2C_BUFFER_SIZE / 2) + (EEPROM_FUNC_START / 2) + i;
-		m_holding_handlerlist[handler_address] = Holding; /// add all function
-		i2c_DEBUG_WRITE("add function handler[0x%x]", handler_address);
+	{
+	    startaddr = ( I2C_BUFFER_SIZE / 2 ) + ( EEPROM_FUNC_START / 2 );
+	    endaddr = startaddr + pincount - 1;
+	    std::shared_ptr<MBBlockInt> funcblock(new MBBlockInt( Holding, startaddr, endaddr ));
+
+	    m_holding_blocklist.push_back( funcblock );
+	    i2c_DEBUG_WRITE("add function handlerblock[%i..%i]", funcblock->getStartAddr(), funcblock->getEndAddr());
+	}
+	
+	/// add all name handler
+	{
+	    startaddr = ((I2C_BUFFER_SIZE + EEPROM_NAME_START) / 2);
+	    endaddr = startaddr + (pincount * (IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2)) - 1;
+	    std::shared_ptr<MBBlockInt> funcblock(new MBBlockInt( Holding, startaddr, endaddr ));
+
+	    m_holding_blocklist.push_back( funcblock );
+	    i2c_DEBUG_WRITE("add name handlerblock[%i..%i]", funcblock->getStartAddr(), funcblock->getEndAddr());
 	}
 
-	/// add all name handler
-	for (i = 0; i < pincount; i++) {
-		for (e = 0; e < IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2; e++) {
-			handler_address = ((I2C_BUFFER_SIZE + EEPROM_NAME_START) / 2)
-					+ (i * (IO_BOARD_MAX_IO_PIN_NAME_LENGTH / 2) + e);
-			m_holding_handlerlist[handler_address] = Holding;
-			i2c_DEBUG_WRITE("add name[%i] handler[0x%x]", i, handler_address);
-		}
+	/// add all perm data handler
+	{
+	    startaddr = ((I2C_BUFFER_SIZE + EEPROM_DATA_START) / 2);
+	    endaddr = startaddr + (pincount * (EEPROM_DATA_LENGTH / 2)) - 1;
+	    std::shared_ptr<MBBlockInt> funcblock(new MBBlockInt( PermData, startaddr, endaddr ));
+
+	    m_holding_blocklist.push_back( funcblock );
+	    i2c_DEBUG_WRITE("add PermData handlerblock[%i..%i]", funcblock->getStartAddr(), funcblock->getEndAddr());
 	}
+
+	{
+	    startaddr = ((I2C_BUFFER_SIZE + EEPROM_SHARED_DATA_START) / 2);
+	    endaddr = startaddr + EEPROM_SHARED_DATA_LENGTH - 1;
+	    std::shared_ptr<MBBlockInt> funcblock(new MBBlockInt( Holding, startaddr, endaddr ));
+
+	    m_holding_blocklist.push_back( funcblock );
+	    i2c_DEBUG_WRITE("add SharedData handlerblock[%i..%i]", funcblock->getStartAddr(), funcblock->getEndAddr());
+	}
+
+
 
 	i2c_DEBUG_WRITE("finished");
 	return true;

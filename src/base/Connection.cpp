@@ -97,6 +97,7 @@ bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tm
 	address = (query[offset + 1] << 8) + query[offset + 2];
 	cur_address = address;
 	MB_Framework::m_handlerlist_type *cur_handlerlist = NULL;
+	MB_Framework::m_blocklist_type *cur_blocklist = NULL;
 
 	modbus_INFO_WRITE("function[0x%x]", function);
 	modbus_INFO_WRITE("address[0x%x]", address);
@@ -104,15 +105,18 @@ bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tm
 	switch (function) {
 	case _FC_READ_INPUT_REGISTERS:
 		cur_handlerlist = &tmp_slave->m_input_handlerlist;
+		cur_blocklist = &tmp_slave->m_input_blocklist;
 		count = (query[offset + 3] << 8) + query[offset + 4];
 		break;
 	case _FC_READ_HOLDING_REGISTERS:
 	case _FC_WRITE_MULTIPLE_REGISTERS:
 		cur_handlerlist = &tmp_slave->m_holding_handlerlist;
+		cur_blocklist = &tmp_slave->m_holding_blocklist;
 		count = (query[offset + 3] << 8) + query[offset + 4];
 		break;
 	case _FC_WRITE_SINGLE_REGISTER:
 		cur_handlerlist = &tmp_slave->m_holding_handlerlist;
+		cur_blocklist = &tmp_slave->m_holding_blocklist;
 		count = 1;
 		break;
 		/* unsupported FC */
@@ -130,25 +134,75 @@ bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tm
 
 	modbus_INFO_WRITE("count[0x%x]", count);
 
-	/* loop over handlerlist */
-	while (cur_address < (address + count)) {
-		modbus_DEBUG_WRITE("search handler[0x%x]", cur_address);
-		modbus_DEBUG_WRITE("handler size: %i", cur_handlerlist->size());
+	std::shared_ptr<MB_Framework::MBHandlerInt> tmpHandler;
 
-		if (cur_handlerlist->size() > 0) {
-			/* get handlerfunction of current address */
-			MB_Framework::m_handlerlist_type::iterator handler_it =	cur_handlerlist->find(cur_address); //try to find slavehandlers
-			if (handler_it != cur_handlerlist->end()) {
-			  shared_ptr<MB_Framework::MBHandlerInt> tmpHandler = handler_it->second;
+	/* loop over handlerlist */
+	while (cur_address < (address + count))
+	{
+	    modbus_DEBUG_WRITE("search handler[0x%x]", cur_address);
+	    modbus_DEBUG_WRITE("handler size: %i", cur_handlerlist->size());
+	    tmpHandler.reset();
+	    uint16_t cur_count = 0;
+	    /**
+	     * First we try directly to find a matching handlier within handlerlist
+	     */
+	    if ( cur_handlerlist != NULL && cur_handlerlist->size() > 0 )
+	    {
+		/* get handlerfunction of current address */
+		MB_Framework::m_handlerlist_type::iterator handler_it =	cur_handlerlist->find(cur_address); //try to find slavehandlers
+		if (handler_it != cur_handlerlist->end())
+		{
+		    tmpHandler = handler_it->second;
+		    cur_count = count - register_done;
+		}
+	    }
+
+	    if ( tmpHandler.get() == NULL )
+	    {
+		/**
+		 * Now we try to find a matching handlier within blocklistlist
+		 */
+		modbus_DEBUG_WRITE("no handler found @%i", cur_address );
+		modbus_DEBUG_WRITE("blocklist size %i", cur_blocklist->size());
+
+		if (cur_blocklist != NULL && cur_blocklist->size() > 0 )
+		{
+		    for ( auto block_it = cur_blocklist->begin(); block_it != cur_blocklist->end(); block_it++)
+		    {
+			if ( (*block_it).get() != NULL )
+			{
+			    modbus_DEBUG_WRITE("block[%i..%i]", (*block_it)->getStartAddr(),
+				     (*block_it)->getEndAddr());
+
+			    if ( (*block_it)->getStartAddr()<= cur_address 
+				    &&  (*block_it)->getEndAddr() >= cur_address )
+			    {
+				tmpHandler = (*block_it)->getHandler();
+				cur_count = count - register_done;
+			        if ( (cur_address + cur_count - 1) > (*block_it)->getEndAddr() )
+				{
+				    cur_count = (*block_it)->getEndAddr() - cur_count + 1;
+				}
+				modbus_DEBUG_WRITE("curcount[%i]", cur_count );
+
+				if ( cur_count <= 0 ){ return false; }
+			    }
+			}
+		    }
+		}
+	    }
+
+	    if( tmpHandler.get() != NULL )
+	    {
 				modbus_DEBUG_WRITE("found handler");
 				HandlerParam * param = new HandlerParam(slave, function,
-						cur_address, count - register_done,
+						cur_address, cur_count,
 						tmp_slave->getMappingDB()); //create new handler object
 				switch (mode) {
 				case handleReadAccess:
 					modbus_DEBUG_WRITE("handleReadAccess[0x%x]", cur_address);
 					//call handleReadAccess function
-					if ((handler_retval = tmpHandler.get()->handleReadAccess(param)) > 0) {
+					if ((handler_retval = tmpHandler->handleReadAccess(param)) > 0) {
 						modbus_DEBUG_WRITE("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
 						register_done += handler_retval;
@@ -164,7 +218,7 @@ bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tm
 				case checkWriteAccess:
 					modbus_DEBUG_WRITE("checkWriteAccess[0x%x]", cur_address);
 					//call handleReadAccess function
-					if ((handler_retval = (*handler_it).second->checkWriteAccess(param)) > 0) {
+					if ((handler_retval = tmpHandler->checkWriteAccess(param)) > 0) {
 						modbus_DEBUG_WRITE("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
 						register_done += handler_retval;
@@ -179,7 +233,7 @@ bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tm
 				case handleWriteAccess:
 					modbus_DEBUG_WRITE("handleWriteAccess[0x%x]", cur_address);
 					//call handleReadAccess function
-					if ((handler_retval = (*handler_it).second->handleWriteAccess(param)) > 0) {
+					if ((handler_retval = tmpHandler->handleWriteAccess(param)) > 0) {
 						modbus_DEBUG_WRITE("handler_retval: %i", handler_retval);
 						cur_address += handler_retval;
 						register_done += handler_retval;
@@ -201,12 +255,6 @@ bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tm
 				return false;
 				break;
 			}
-		} else {
-			//no handler found -> exception
-			modbus_WARN_WRITE("empty handlerlist: modbus_reply_exception");
-			return false;
-			break;
-		}
 	}
 	return true;
 }
