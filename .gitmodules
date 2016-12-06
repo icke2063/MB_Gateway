@@ -3,13 +3,13 @@
 	url = git://github.com/stephane/libmodbus
 [submodule "MB_Framework"]
 	path = MB_Framework
-	url = git@git/srv/git/MB_Framework.git
+	url = git@git/srv/git/MB_Framework.bare
 [submodule "src/I2C/I2C_IO_BOARD.git"]
 	path = src/I2C/I2C_IO_BOARD.git
-	url = git@git/srv/git/I2C_IO_BOARD.git
+	url = git@git/srv/git/I2C_IO_BOARD.bare
 [submodule "common_cpp"]
 	path = common_cpp
-	url = git@git/srv/git/common_cpp.git
+	url = git@git/srv/git/common_cpp.bare
 [submodule "CXX11-CMake-Macros"]
 	path = CXX11-CMake-Macros
-	url = git@github.com:icke2063/CXX11-CMake-Macros.git
+	url = git@git/srv/git/CXX11-CMake-Macros.bare
