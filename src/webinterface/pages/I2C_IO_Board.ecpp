@@ -576,7 +576,7 @@ if(request_table_io_board_viopin != "")
 			switch(func_it->second)
 			{
 				case PIN_SWITCH:
-					cur_port[func_it->first/8] |= (1 << func_it->first)<<8;	//enable port pin mask but set pin value -> off
+					cur_port[func_it->first/8] |= (1 << func_it->first%8);	//enable port pin mask but set pin value -> off
 					break;
 				case PIN_TOGGLE:
 				case PIN_PULSE:	
@@ -615,7 +615,9 @@ if(request_table_io_board_viopin != "")
 			default:
 				break;
 		}
+	
 	}//for
+
 
 
 	recvbuffer[0] = (VIRTUAL_IO_START >> 8); //first high
@@ -623,6 +625,7 @@ if(request_table_io_board_viopin != "")
 	
 	for(int port_pos=0;port_pos< vio_port_count;port_pos++)
 	{
+		pages_DEBUG_WRITE("write port[%i]: 0x%x", port_pos, cur_port[port_pos]);
 		recvbuffer[2+(port_pos*2)] = cur_port[port_pos] >> 8;
 		recvbuffer[2+(port_pos*2)+1] = cur_port[port_pos] & 0xFF;
 	}
@@ -705,6 +708,11 @@ std::string name = "";
 			}
 			break;
 		case PIN_SWITCH:
+			if((vio_port >> 8) & (1<<(pin%8))){
+				back_color = "rgb(0,153,0)";
+			}else{
+				back_color = "rgb(153,0,0)";
+			}
 			break;
 		case PIN_TOGGLE:
 			break;
