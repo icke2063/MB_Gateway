@@ -660,6 +660,7 @@ if(request_table_io_board_viopin != "")
 <%args>
 int pin = 0;
 int pin_func = 0;
+int vio_port = 0;
 </%args>
 <%cpp>
 		switch(pin_func)
@@ -668,7 +669,7 @@ int pin_func = 0;
 		case PIN_TOGGLE:
 		case PIN_PULSE:
 </%cpp>
-	<input type="checkbox" name="viopin" value="<$ (uint16_t)((pin_func << 8) | pin) $>">
+	<input type="checkbox" name="viopin" value="<$ (uint16_t)((pin_func << 8) | pin) $>" <$ ((vio_port >> 8) & (1<<(pin%8)))?"checked=\"checked\"":"" $>
 <%cpp>		
 			break;		
 		case PIN_OW_POWER_PARASITE:
