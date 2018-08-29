@@ -33,7 +33,7 @@ namespace I2C {
 class I2C_Slave: public VirtualRTUSlave
 {
 public:
-	I2C_Slave(uint8_t SlaveAddr, I2CSLAVE_H_NS::shared_ptr<I2C::I2C_Comm> sp_i2c_comm);
+	I2C_Slave(uint8_t SlaveAddr, I2CSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm);
 	virtual ~I2C_Slave() {}
 	virtual uint8_t getType(void) {
 		return SLAVE_TYPE_I2C;
@@ -41,10 +41,10 @@ public:
 
 	virtual bool init(void);
 
-	I2CSLAVE_H_NS::shared_ptr<I2C::I2C_Comm> getI2CComm(){return m_sp_i2c_comm;}
+	I2CSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> getI2CComm(){return m_sp_i2c_comm;}
 
 protected:
-	I2CSLAVE_H_NS::shared_ptr<I2C::I2C_Comm> m_sp_i2c_comm;
+	I2CSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> m_sp_i2c_comm;
 	I2CSLAVE_H_NS::shared_ptr<MultiByteHandler> Multi;
 
 };

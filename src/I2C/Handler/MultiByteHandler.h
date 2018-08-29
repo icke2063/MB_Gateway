@@ -33,7 +33,7 @@ enum address_mode {
 class MultiByteHandler:
 	public DefaultHandler {
 public:
-	MultiByteHandler(std::shared_ptr<I2C_Comm> sp_i2c_comm
+	MultiByteHandler(std::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm
 			, enum address_mode mode = _8bit
 			, int16_t byte_count = -1) :
 			m_mode(mode), m_byte_count(byte_count), m_sp_i2c_comm(sp_i2c_comm)
@@ -48,7 +48,7 @@ public:
 	virtual int handleWriteAccess(icke2063::MB_Framework::MBHandlerParam *param);
 
 protected:
-	std::shared_ptr<I2C_Comm> m_sp_i2c_comm;
+	std::shared_ptr<icke2063::I2C::I2C_Comm> m_sp_i2c_comm;
 private:
 
 	enum address_mode m_mode;

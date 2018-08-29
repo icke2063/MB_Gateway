@@ -13,7 +13,8 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-I2C_Slave::I2C_Slave(uint8_t SlaveAddr, I2CSLAVE_H_NS::shared_ptr<I2C::I2C_Comm> sp_i2c_comm) :
+I2C_Slave::I2C_Slave(uint8_t SlaveAddr,
+		I2CSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm) :
 		VirtualRTUSlave(SlaveAddr)
 		,m_sp_i2c_comm(sp_i2c_comm)
 {

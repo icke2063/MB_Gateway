@@ -37,7 +37,7 @@ I2C_Scanner::I2C_Scanner(std::string& i2c_master_path, unsigned int timeout_ms) 
 
 	i2c_INFO_WRITE("I2C_Scanner\n");
 	i2c_DEBUG_WRITE("m_timeout_ms: %d\n",m_timeout_ms);
-	m_sp_i2cbus_comm.reset(new I2C::I2C_Comm(m_I2C_master_path));
+	m_sp_i2cbus_comm.reset(new icke2063::I2C::I2C_Comm(m_I2C_master_path));
 }
 
 I2C_Scanner::~I2C_Scanner() {

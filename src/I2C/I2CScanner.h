@@ -76,7 +76,7 @@ private:
 	/**
 	* I2C communication object
 	*/
-      I2CSCANNER_H_NS::shared_ptr<I2C::I2C_Comm> m_sp_i2cbus_comm;
+      I2CSCANNER_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> m_sp_i2cbus_comm;
 };
 
 }}} /* namespace icke2063::MB_Gateway::I2C */

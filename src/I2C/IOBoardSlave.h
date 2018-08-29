@@ -37,7 +37,7 @@ namespace I2C {
 
 class VersionHandler: public MultiByteHandler {
 public:
-	VersionHandler(IOBOARDSLAVE_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm);
+	VersionHandler(IOBOARDSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm);
 	virtual ~VersionHandler() {}
 
 	virtual int handleReadAccess(MB_Framework::MBHandlerParam *param);
@@ -51,7 +51,8 @@ public:
 
 class DataHandler: public MultiByteHandler {
 public:
-	DataHandler(IOBOARDSLAVE_H_NS::shared_ptr<I2C_Comm> sp_i2c_comm):MultiByteHandler(sp_i2c_comm, _16bit,-1){}
+	DataHandler(IOBOARDSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm):
+		MultiByteHandler(sp_i2c_comm, _16bit,-1){}
 	virtual ~DataHandler() {}
 
 	virtual int handleReadAccess(MB_Framework::MBHandlerParam *param);
@@ -61,7 +62,8 @@ public:
 
 class IOBoard_Slave: public I2C_Slave {
 public:
-	IOBoard_Slave(uint8_t SlaveAddr, IOBOARDSLAVE_H_NS::shared_ptr<I2C::I2C_Comm> sp_i2c_comm);
+	IOBoard_Slave(uint8_t SlaveAddr,
+			IOBOARDSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm);
 	virtual ~IOBoard_Slave();
 	virtual bool init(void);
 

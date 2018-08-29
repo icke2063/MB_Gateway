@@ -40,8 +40,9 @@ namespace icke2063 {
 namespace MB_Gateway {
 namespace I2C {
 
-VersionHandler::VersionHandler(std::shared_ptr<I2C_Comm> sp_i2c_comm) :
-		MultiByteHandler(sp_i2c_comm, _16bit, -1) {
+VersionHandler::VersionHandler(std::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm) :
+		MultiByteHandler(sp_i2c_comm, _16bit, -1)
+{
 	i2c_INFO_WRITE("VersionHandler");
 	enableReadInpReg = false; //disable input register access
 }
@@ -119,7 +120,8 @@ int DataHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 	return 0; //return zero register handled > modbus exception
 }
 
-IOBoard_Slave::IOBoard_Slave(uint8_t SlaveAddr, IOBOARDSLAVE_H_NS::shared_ptr<I2C::I2C_Comm> sp_i2c_comm) :
+IOBoard_Slave::IOBoard_Slave(uint8_t SlaveAddr,
+		IOBOARDSLAVE_H_NS::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm) :
 		I2C_Slave(SlaveAddr, sp_i2c_comm)
 {
 

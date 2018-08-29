@@ -3,7 +3,6 @@ configure_file(
 	${CMAKE_CURRENT_BINARY_DIR}/build_options.h
 )
 
-
 ### Logging stuff ###
 
 SET(LOGGING_PREFIX crumby)
@@ -23,22 +22,6 @@ SET(LOG_SRC
 UNSET(LOGGING_PREFIX)
 
 SET(LOGGING_PREFIX modbus)
-configure_file(
-	${common_cpp_SOURCE_DIR}/include/logging_macros.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.h
-)
-
-configure_file(
-	${common_cpp_SOURCE_DIR}/include/logging_macros.c.in
-	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
-)
-
-SET(LOG_SRC ${LOG_SRC}
-    ${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.c
-)
-UNSET(LOGGING_PREFIX)
-
-SET(LOGGING_PREFIX i2c)
 configure_file(
 	${common_cpp_SOURCE_DIR}/include/logging_macros.h.in
 	${CMAKE_CURRENT_BINARY_DIR}/${LOGGING_PREFIX}_logging_macros.h
@@ -138,7 +121,6 @@ if (CRUMBY_I2C_SUPPORT)
 	include_directories(
 		${CMAKE_CURRENT_BINARY_DIR}/I2C
 		${CMAKE_CURRENT_SOURCE_DIR}/I2C
-		${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C-Comm
 		${CMAKE_CURRENT_SOURCE_DIR}/I2C/Handler
 		${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C_IO_BOARD.git/base/inc	
 		${CMAKE_CURRENT_SOURCE_DIR}/I2C/I2C_IO_BOARD.git/common_AVR/config
@@ -166,41 +148,31 @@ if (CRUMBY_I2C_SUPPORT)
 endif (CRUMBY_I2C_SUPPORT)
 
 ### ADD TARGET ###
-add_executable (${PROJECT_NAME} base/main.cpp
+add_executable (crumby base/main.cpp
   ${DEF_SOURCES}
   ${LOG_SRC}
   ${PAGES_CPP_SRC}
   ${I2C_SOURCES}
 )
 
-add_executable (testclient testclient/MBGateway_Testclient.cpp)
+add_executable (testclient 
+    testclient/MBGateway_Testclient.cpp)
 
-
-
-### ADD PREPROCESS MACROS ###
 
 ### LINK LIBRARIES ###
-if(C++11 AND CRUMBY_USE_C++11_SUPPORT)
-    target_link_libraries(${PROJECT_NAME} pthread)
-else()
-    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-endif()
+target_link_libraries(crumby 
+    pthread 
+    ${Boost_LIBRARIES}
+    ${MODBUS_LIB}
+	common_cpp-shared
+)
 
 if(CRUMBY_WEBINTERFACE)
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(crumby
 	tntnet
 	cxxtools
 )
-
 endif(CRUMBY_WEBINTERFACE)
-
-
-
-#default libraries
-target_link_libraries(${PROJECT_NAME}
-	${MODBUS_LIB}
-	common_cpp-shared
-)
 
 target_link_libraries(testclient
 	${MODBUS_LIB}
