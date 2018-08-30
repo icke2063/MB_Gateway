@@ -75,6 +75,46 @@ Connection::~Connection() {
 	}
 }
 
+// mb_length = b_length/2 + b_length%2
+//0 (0+0) -> 0
+//1 (0+1)-> 1
+//2 (1+0)-> 1
+//3 (1+1)-> 2
+//4 (2+0)-> 2
+//	1	2	 3	 4	  5	  6	   7
+// [0] [1]  [2] [3]  [4] [5]  [6]
+// [  0  ]  [  1  ]  [  2  ]  [  3  ]
+
+int Connection::writeBeBytetoMBReg(uint16_t *mb_data, const uint8_t *b_data, uint16_t b_length)
+{
+	uint16_t mb_length = (b_length>>1) + (b_length%2);
+	modbus_DEBUG_WRITE("b_length: %u -> mb_length: %u\n", b_length, mb_length);
+
+	for(int mb_pos=0; mb_pos<mb_length; mb_pos++)
+	{
+		uint16_t mb_value = b_data[mb_pos * 2] << 8;
+		if( ((mb_pos * 2) + 1) < b_length ) mb_value |= b_data[(mb_pos * 2) + 1];
+
+		mb_data[mb_pos] = mb_value;
+	}
+
+	return 0;
+}
+
+int Connection::writeMBRegtoBeByte(uint8_t *b_data, const uint16_t *mb_data, uint16_t mb_length)
+{
+	uint16_t b_length = mb_length*2;
+	modbus_DEBUG_WRITE("mb_length: %u -> b_length: %u\n", mb_length, b_length);
+
+	for(int mb_pos=0; mb_pos<mb_length; mb_pos++)
+	{
+		b_data[mb_pos * 2] = mb_data[mb_pos] >> 8;
+		b_data[(mb_pos * 2) + 1] = mb_data[mb_pos] & 0xff;
+	}
+	return 0;
+}
+
+
 bool Connection::handleQuery(uint8_t* query, std::shared_ptr<VirtualRTUSlave> tmp_slave,
 		enum handleQuery_mode mode) 
 {

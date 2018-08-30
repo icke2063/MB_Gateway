@@ -10,7 +10,9 @@
 #include <IOBoardSlave.h>
 #include <stddef.h>
 #include <string.h>
+#include <arpa/inet.h>
 
+#include <Connection.h>
 #include <HandlerList.h>
 #include <I2CComm.h>
 
@@ -362,8 +364,10 @@ void IOBoard_Slave::getSlaveInfo(void) {
 			getSlaveAddr(), recvbuffer, _16bit, 2)) {
 		i2c_INFO_WRITE("IOBoard[0x%x]SlaveID:0x%x", getSlaveAddr(), recvbuffer[0]);
 
-		if(m_mapping){
-			memcpy(m_mapping->tab_registers,recvbuffer,2);	//store in DB
+		if(m_mapping)
+		{
+//			memcpy(m_mapping->tab_registers,recvbuffer,2);	//store in DB
+			Connection::writeBeBytetoMBReg(m_mapping->tab_registers, recvbuffer, 2);
 		}
 	} else {
 		i2c_ERROR_WRITE("IOBoard[0x%x] unable read SlaveID", getSlaveAddr());
@@ -379,8 +383,15 @@ void IOBoard_Slave::getSlaveInfo(void) {
 		recvbuffer[VERSION_LENGTH] = '\0';
 
 		if(m_mapping){
-			memcpy(&m_mapping->tab_registers[VERSION_START/2],recvbuffer,VERSION_LENGTH);	//store in DB
-			i2c_INFO_WRITE("IOBoard[0x%x]Version:%s", getSlaveAddr(), &m_mapping->tab_registers[VERSION_START/2]);
+		//	memcpy(&m_mapping->tab_registers[VERSION_START/2],recvbuffer,VERSION_LENGTH);	//store in DB
+			Connection::writeBeBytetoMBReg(&m_mapping->tab_registers[VERSION_START/2],
+					recvbuffer,VERSION_LENGTH);
+
+			uint8_t version[VERSION_LENGTH +1];
+			memset(version, 0, sizeof(version));
+			Connection::writeMBRegtoBeByte(version, &m_mapping->tab_registers[VERSION_START/2], VERSION_LENGTH/2);
+
+			i2c_INFO_WRITE("IOBoard[0x%x]Version:%s", getSlaveAddr(), version);
 		}
 	} else {
 		i2c_ERROR_WRITE("IOBoard[0x%x] unable read version", getSlaveAddr());
@@ -394,9 +405,12 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	if (m_sp_i2c_comm->Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, 2)) {
 		pincount = recvbuffer[0];
-		if(m_mapping){
-			memcpy(&m_mapping->tab_registers[VIRTUAL_IO_COUNT/2],recvbuffer,2);	//store in DB
-			i2c_INFO_WRITE("IOBoard[0x%x] pincount:%i", getSlaveAddr(), m_mapping->tab_registers[VIRTUAL_IO_COUNT/2]);
+		if(m_mapping)
+		{
+//			memcpy(&m_mapping->tab_registers[VIRTUAL_IO_COUNT/2],recvbuffer,2);	//store in DB
+			Connection::writeBeBytetoMBReg(&m_mapping->tab_registers[VIRTUAL_IO_COUNT/2],recvbuffer,2);
+			i2c_INFO_WRITE("IOBoard[0x%x] pincount:%i", getSlaveAddr(),
+					m_mapping->tab_registers[VIRTUAL_IO_COUNT/2]&0xFF);
 		}
 	} else {
 		i2c_ERROR_WRITE("IOBoard[0x%x] unable read pincount", getSlaveAddr());
@@ -411,10 +425,14 @@ void IOBoard_Slave::getSlaveInfo(void) {
 	if (m_sp_i2c_comm->Read_I2C_Bytes(
 			getSlaveAddr(), recvbuffer, _16bit, pincount * 2)) {
 
-		if(m_mapping){	// write values into DB
-			memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,pincount * 2);	//store in DB
-			for (i = 0; i < pincount; i++) {
-				i2c_INFO_WRITE("function[%i]:0x%x", (i2c_address/2)+(i*2), m_mapping->tab_registers[(i2c_address/2)+(i*2)]);
+		if(m_mapping)
+		{	// write values into DB
+			Connection::writeBeBytetoMBReg(&m_mapping->tab_registers[i2c_address/2],recvbuffer,pincount * 2);
+			for (i = 0; i < pincount; i++)
+			{
+				// values aligned to 16bit -> no problems to read the converted values directly
+				i2c_INFO_WRITE("function[%i]:0x%x",
+						(i2c_address/2)+(i*2), m_mapping->tab_registers[(i2c_address/2)+(i*2)]);
 			}
 		}
 	} else {
@@ -434,8 +452,12 @@ void IOBoard_Slave::getSlaveInfo(void) {
 				getSlaveAddr(), recvbuffer, _16bit, IO_BOARD_MAX_IO_PIN_NAME_LENGTH)) {
 			recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0';
 
-			if(m_mapping){
-				memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,IO_BOARD_MAX_IO_PIN_NAME_LENGTH);	//store in DB
+			if(m_mapping)
+			{
+//				memcpy(&m_mapping->tab_registers[i2c_address/2],recvbuffer,IO_BOARD_MAX_IO_PIN_NAME_LENGTH);	//store in DB
+				Connection::writeBeBytetoMBReg(&m_mapping->tab_registers[i2c_address/2],
+						recvbuffer, IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+
 				i2c_INFO_WRITE("name[%i]:%s", i, recvbuffer);
 			}
 		} else {

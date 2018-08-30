@@ -3,7 +3,7 @@
 // Author      : icke2063
 // Version     :
 // Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
+// Description : Modbus TCP Gateway
 //============================================================================
 
 #include <iostream>
@@ -52,7 +52,8 @@ using namespace icke2063::MB_Gateway;
 
 FILE *logfile = NULL;
 
-void crumby_logfn(uint8_t loglevel, const char *file, const int line, const char *fn, const char *format, va_list args)
+void crumby_logfn(uint8_t loglevel, const char *file, const int line,
+		const char *fn, const char *format, va_list args)
 {
 	if(logfile != NULL)
 	{
@@ -67,7 +68,6 @@ int main(int argc, const char *argv[])
 {
 
 	logfile = stdout;
-
 
 	po::options_description desc("Allowed options");
 	desc.add_options()
@@ -127,7 +127,6 @@ int main(int argc, const char *argv[])
 	{
 		std::auto_ptr<Server> custom_server(new Server(vm["mb_port"].as<int>() ,pool));
 	}
-	//
 
 #ifdef CRUMBY_I2C_SUPPORT
 	std::string i2c_master_path("/dev/null");

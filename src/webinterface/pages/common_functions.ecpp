@@ -1,9 +1,22 @@
+<############################################################>
+<# common tntnet functions									#>
+<# these functions are used in other tntnet files too		#>
+<############################################################>
+
+
+<####################################>
+<# common doctype for all webpages	#>
+<####################################>
 <%def doctype>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">	
 <html xmlns="http://www.w3.org/1999/xhtml">						
 <# <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"> #>
 </%def>
 
+
+<########################################>
+<# common html head for all webpages	#>
+<########################################>
 <%def html_head>
 <%args>
 project = "crumby";
@@ -12,23 +25,32 @@ project = "crumby";
 <meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-15' />
 <meta name='author' content='icke2063, icke2063@gmail.com' />
 <link rel='shortcut icon' href='./favicon.ico' type='image/ico'/>
-
 <link rel='stylesheet' type='text/css' href='./css/formats.css' />
 </head>
 </%def>
 
+
+<########################################>
+<# common html header for all webpages	#>
+<########################################>
 <%def header>
 <div id='header'>
 	<h1>crumby</h1>
 </div> <!-- header -->
 </%def>
 
+<########################################>
+<# common html footer for all webpages	#>
+<########################################>
 <%def footer>
 <div id='footer'>
-	<p> &copy; 2013-2015&nbsp;icke2063</p>
+	<p> &copy; 2013-2018&nbsp;icke2063</p>
 </div> <!-- id footer -->
 </%def>
 
+<########################################>
+<# common authentification function		#>
+<########################################>
 <%def authentification>
 <%session scope="global">
 	bool logged_in(false);	//current useless :-)

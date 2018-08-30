@@ -24,6 +24,9 @@ I2C slave[<$ SlaveNr $>] not found
 //boost library
 #include "boost/serialization/singleton.hpp"
 
+// MB_Framework
+#include <Connection.h>
+
 //project specific
 #include <SlaveList.h>
 #include <SummerySlave.h>
@@ -159,7 +162,7 @@ if( p_slave.get() != NULL )
 	{
 		//get pin function code
 		i2c_address = (I2C_BUFFER_SIZE + EEPROM_FUNC_START + (pin * 2));
-		pin_function[pin] = p_io_board->getMappingDB()->tab_registers[i2c_address/2] >> 8 ;
+		pin_function[pin] = p_io_board->getMappingDB()->tab_registers[i2c_address/2] ;
 	}
 	
 	//get eeprom write enable status
@@ -237,7 +240,10 @@ if( p_slave.get() != NULL )
 		<td>
 <%cpp>
 	// get version string from io_board slave object
-	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[VERSION_START/2], VERSION_LENGTH);
+	Connection::writeMBRegtoBeByte(recvbuffer, 
+		&p_io_board->getMappingDB()->tab_registers[VERSION_START/2],
+ 		(VERSION_LENGTH/2) + (VERSION_LENGTH%2));
+
 	recvbuffer[VERSION_LENGTH] = '\0'; //
 </%cpp>
 		<$ recvbuffer $>
@@ -270,7 +276,10 @@ if( p_slave.get() != NULL )
 for(pin=0;pin<12;pin=pin+2){
 uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 				+ (pin * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
-	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+				
+	Connection::writeMBRegtoBeByte(recvbuffer,
+			&p_io_board->getMappingDB()->tab_registers[i2c_address/2], 
+	 		(IO_BOARD_MAX_IO_PIN_NAME_LENGTH/2) + (IO_BOARD_MAX_IO_PIN_NAME_LENGTH%2));
 	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
 </%cpp>
 	    <td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>[<$ (glob_write_enable==1)?(int)i2c_address:0 $>]:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
@@ -301,7 +310,9 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 for(pin=12;pin<16;pin++){
 uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 				+ (pin * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
-	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	Connection::writeMBRegtoBeByte(recvbuffer, 
+			&p_io_board->getMappingDB()->tab_registers[i2c_address/2],
+	 		(IO_BOARD_MAX_IO_PIN_NAME_LENGTH/2) + (IO_BOARD_MAX_IO_PIN_NAME_LENGTH%2));
 	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
 </%cpp>
 		<td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>[<$ (glob_write_enable==1)?(int)i2c_address:0 $>]:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>
@@ -343,7 +354,9 @@ uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 for(pin=1;pin<12;pin=pin+2){
 uint16_t i2c_address = (I2C_BUFFER_SIZE) + (EEPROM_NAME_START)
 				+ (pin * IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
-	memcpy(recvbuffer, &p_io_board->getMappingDB()->tab_registers[i2c_address/2], IO_BOARD_MAX_IO_PIN_NAME_LENGTH);
+	Connection::writeMBRegtoBeByte(recvbuffer, 
+			&p_io_board->getMappingDB()->tab_registers[i2c_address/2],
+		(IO_BOARD_MAX_IO_PIN_NAME_LENGTH/2) + (IO_BOARD_MAX_IO_PIN_NAME_LENGTH%2));
 	recvbuffer[IO_BOARD_MAX_IO_PIN_NAME_LENGTH] = '\0'; //
 </%cpp>
 	    <td <& style_by_pin_status pin=pin pin_func=((int)pin_function[pin]) vio_port=((int)vio_port[pin/8])> ><$ 1+pin $>[<$ (glob_write_enable==1)?(int)i2c_address:0 $>]:<input name="pin_name_<$ pin $>" value="<$ recvbuffer $>"></td>

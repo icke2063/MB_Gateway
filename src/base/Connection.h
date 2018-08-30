@@ -78,6 +78,21 @@ public:
 	virtual ~Connection();
 	modbus_t *getConnInfo (void){return p_ctx;}
 	
+	/* mb_length = b_length/2 + b_length%2
+	 *	0 (0+0) -> 0
+	 *	1 (0+1)-> 1
+	 *	2 (1+0)-> 1
+	 *	3 (1+1)-> 2
+	 *	4 (2+0)-> 2
+	 *
+	 *	 1	 2	  3	  4	   5   6    7
+	 *	[0] [1]  [2] [3]  [4] [5]  [6]
+	 *	[  0  ]  [  1  ]  [  2  ]  [  3  ]
+	 */
+	static int writeBeBytetoMBReg(uint16_t *mb_data, const uint8_t *b_data, uint16_t b_length);
+
+	static int writeMBRegtoBeByte(uint8_t *b_data, const uint16_t *mb_data, uint16_t mb_length);
+
 private:
 	bool m_connection_running;
 
