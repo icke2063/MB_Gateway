@@ -1,3 +1,13 @@
+<####################################################>
+<# Webpage to communicate with simple I2C devices	#>
+<# content:	- simple read/write formular			#>
+<#			- simple memory dump formular			#>
+<####################################################>
+<%session scope="page">
+	int s_i2c_address = -1;		// i2c address data should be written to
+	int s_i2c_address_mode = -1;		// single vallue or string
+</%session>
+
 <%args>
 int SlaveNr = 0;
 </%args>
@@ -16,8 +26,8 @@ I2C slave[<$ SlaveNr $>] not found
 %}
 <& common_functions.footer qparam >
 
+<# include some C/C++ header #>
 <%pre>
-//#include <stddef.h>
 #include <string>
 using std::string;
 
@@ -47,24 +57,41 @@ using namespace icke2063::MB_Gateway::I2C;
 int i2c_transfer = -1;
 </%request>
 
-<####################################>
-<# i2c formular for read/write	    #>
-<####################################>
+
+
+
+<#############################################>
+<# simple i2c formular for read/write		 #>
+<# i2c eeprom connectied to crumby i2c bus	 #>
+<#											 #>
+<#	addressing: - SlaveNr (virtual MB Slave) #>
+<#				- 8bit or 16bit				 #>
+<#	data_mode:	- single value				 #>
+<#					- string value			 #>
+<#############################################>
 <%def form_i2c>
-
 <%args>
-int SlaveNr = 0;
-int i2c_address_mode = 1;
-int i2c_data_mode = 1;
+int SlaveNr = 0;			// virtual mb slave
+int i2c_address_mode = -1;	// 8bit or 16bit i2c addressing
+int i2c_data_mode = 1;		// single vallue or string
 
-int i2c_address = -1;
-int i2c_value = -1;
+int i2c_address = -1;		// i2c address data should be written to
+int i2c_value = -1;			// simple value written to i2c address
+std::string i2c_string = "";// complete string written to i2c address
 
-string btn_i2c_form = "";
-std::string i2c_string = "";
 size_t i2c_max_stringlength = 20;
 
+string btn_i2c_form = "";	// value of button (read/write)
 </%args>
+<%cpp>
+/** @todo[icke2063] think I use it not correct -> read more about session variables/form variables */
+//store/restore i2c_address
+if(i2c_address != -1)s_i2c_address = i2c_address;
+if(s_i2c_address != -1)i2c_address = s_i2c_address;
+//store restore i2c_address mode
+if(i2c_address_mode != -1)s_i2c_address_mode = i2c_address_mode;
+if(s_i2c_address_mode != -1)i2c_address_mode = s_i2c_address_mode;
+</%cpp>
 <div id="i2c_form">
 <& handle_form_i2c qparam >
 <fieldset class="box">
@@ -72,7 +99,7 @@ size_t i2c_max_stringlength = 20;
 <form action="<$ request.getUrl()$>?SlaveNr=<$ SlaveNr $>" method="post" accept-charset="ISO-8859-1">
 	<input type='hidden' name='SlaveNr' value='<$ SlaveNr $>' />
 	I2C address mode:
-		<input type="radio" name="i2c_address_mode" value="1" <$ i2c_address_mode==1?"checked":"" $> > 8 Bit
+		<input type="radio" name="i2c_address_mode" value="1" <$ i2c_address_mode!=2?"checked":"" $> > 8 Bit
 		<input type="radio" name="i2c_address_mode" value="2" <$ i2c_address_mode==2?"checked":"" $> > 16 Bit<br>
 	I2C address:
 		<input name="i2c_address" value="<$ i2c_address $>"><br>	
@@ -189,9 +216,10 @@ if( p_slave != NULL )
 				}
 				if(i2c_data_mode == 2)
 				{
-					length =  (i2c_string.size()>i2c_max_stringlength)?i2c_max_stringlength:i2c_string.size();
+					length =  (i2c_string.size()>i2c_max_stringlength-1)?i2c_max_stringlength-1:i2c_string.size();
 					memcpy(&recvbuffer[1], i2c_string.c_str(), length);
-					
+					recvbuffer[1+length] = 0;
+					length += 1;
 				}	
 				
 				break;
@@ -206,6 +234,8 @@ if( p_slave != NULL )
 				if(i2c_data_mode == 2){
 					length =  (i2c_string.size() > i2c_max_stringlength)?i2c_max_stringlength:i2c_string.size();
 					memcpy(&recvbuffer[2], i2c_string.c_str(), length);
+					recvbuffer[2+length] = 0;
+					length += 1;
 					
 				}
 				break;
