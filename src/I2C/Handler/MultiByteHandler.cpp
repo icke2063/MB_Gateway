@@ -14,6 +14,7 @@
 #include <I2CComm.h>
 #include <string.h>
 #include <Convert.h>
+using namespace icke2063::common_cpp;
 
 #include <mb_common.h>
 
@@ -114,17 +115,21 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 		}
 
 		// read data from i2c bus
-		if (m_sp_i2c_comm->Read_I2C_Bytes(curHandler->m_slave, recvbuffer, m_mode, byte_count))
+		if (m_sp_i2c_comm->Read_I2C_Bytes(curHandler->m_slave,
+				recvbuffer, m_mode, byte_count))
 		{
-
-			icke2063::common_cpp::Convert converter;
 			//copy data to mb_mapping
 			switch (curHandler->m_function) {
 			case _FC_READ_INPUT_REGISTERS: //FC 03:read holding register
 			{
-				converter.BigEndiantoShort(
+				if ( byte_count % 2 )
+				{// odd number of bytes requested
+					recvbuffer[byte_count] = 0; //reset last byte
+				}
+
+				Convert::BigEndiantoShort(
 						&curHandler->p_mb_mapping->tab_input_registers[address],
-						(uint16_t*)recvbuffer, (size_t) curHandler->m_count);
+						(uint16_t*)recvbuffer, (size_t) ((byte_count/2) + (byte_count%2)));
 //				int i;
 //				for(i=0;i<byte_count;i++){
 //					i2c_DEBUG_WRITE("recv[%i]:0x%x",i,recvbuffer[i]);
@@ -133,9 +138,14 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 				break;
 			case _FC_READ_HOLDING_REGISTERS: //FC 04:read input register
 			{
-				converter.BigEndiantoShort(
+				if ( byte_count % 2 )
+				{// odd number of bytes requested
+					recvbuffer[byte_count] = 0; //reset last byte
+				}
+
+				Convert::BigEndiantoShort(
 						&curHandler->p_mb_mapping->tab_registers[address],
-						(uint16_t*)recvbuffer, (size_t) curHandler->m_count);
+						(uint16_t*)recvbuffer, (size_t) ((byte_count/2) + (byte_count%2)));
 //				int i;
 //				for(i=0;i<byte_count;i++){
 //					i2c_DEBUG_WRITE("recv[%i]:0x%x",i,recvbuffer[i]);
@@ -145,8 +155,7 @@ int MultiByteHandler::handleReadAccess(MB_Framework::MBHandlerParam *param) {
 			default: //not supported FC in this handler
 				return 0;
 			}
-			return ((byte_count % 2) == 0) ?
-					byte_count / 2 : (byte_count / 2) + 1;
+			return ((byte_count/2) + (byte_count%2));
 		} else
 			i2c_ERROR_WRITE("Read_I2C_Bytes failure");
 	}
@@ -229,7 +238,8 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 				return 0;
 			}
 			if ((address + (byte_count/2)) > curHandler->p_mb_mapping->nb_registers){
-				i2c_ERROR_WRITE("out of range: 0x%x > 0x%x",(address + (byte_count/2)),curHandler->p_mb_mapping->nb_registers);
+				i2c_ERROR_WRITE("out of range: 0x%x > 0x%x",
+						(address + (byte_count/2)),curHandler->p_mb_mapping->nb_registers);
 				return 0;
 			}
 		}
@@ -239,15 +249,13 @@ int MultiByteHandler::handleWriteAccess(MB_Framework::MBHandlerParam *param) {
 			return 0;
 		}
 
-		icke2063::common_cpp::Convert converter;
-		converter.ShorttoBigEndian((uint16_t*)&sendbuffer[send_offset],
+		Convert::ShorttoBigEndian((uint16_t*)&sendbuffer[send_offset],
 				&curHandler->p_mb_mapping->tab_registers[address],
-				(size_t) curHandler->m_count);
+				(size_t) ((byte_count/2) + (byte_count%2)));
 
 		if (m_sp_i2c_comm->Write_I2C_Bytes(
 				slave, sendbuffer, m_mode, byte_count)){
-			ret = ((byte_count % 2) == 0) ?
-					byte_count / 2 : (byte_count / 2) + 1;
+			ret = ((byte_count/2) + (byte_count%2));
 			i2c_DEBUG_WRITE("written data count: %i",ret);
 			return ret;
 		}
@@ -269,7 +277,7 @@ int MultiByteHandler::checkWriteAccess(MB_Framework::MBHandlerParam *param) {
 		else
 			byte_count = m_byte_count;
 
-		return ((byte_count % 2) == 0) ? byte_count / 2 : (byte_count / 2) + 1;
+		return ((byte_count/2) + (byte_count%2));
 	}
 	return 0;
 }

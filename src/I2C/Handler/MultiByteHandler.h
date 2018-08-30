@@ -15,7 +15,9 @@
 /** C++11 */
 #include <memory>
 
-#include <handler/DefaultHandler.h>
+/* MB Framework */
+#include <MBHandlerInt.h>
+
 #include <I2CComm.h>
 
 #include "modbus/modbus.h"
@@ -31,12 +33,14 @@ enum address_mode {
 };
 
 class MultiByteHandler:
-	public DefaultHandler {
+		public icke2063::MB_Framework::MBHandlerInt
+{
 public:
 	MultiByteHandler(std::shared_ptr<icke2063::I2C::I2C_Comm> sp_i2c_comm
 			, enum address_mode mode = _8bit
 			, int16_t byte_count = -1) :
-			m_mode(mode), m_byte_count(byte_count), m_sp_i2c_comm(sp_i2c_comm)
+			m_sp_i2c_comm(sp_i2c_comm), m_mode(mode),
+			m_byte_count(byte_count)
 	{
 		i2c_INFO_WRITE("MultiByteHandler");
 	}
