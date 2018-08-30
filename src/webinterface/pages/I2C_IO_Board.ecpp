@@ -474,8 +474,27 @@ int SlaveNr = 0;
 	<option value="<$ func_code == PIN_PULSE?(255<<8):(uint16_t)((pinNr<<8) | PIN_PULSE) $>" <$ func_code == PIN_PULSE?"selected":"" $>>pulse</option>
 	<option value="<$ func_code == PIN_OW_POWER_PARASITE?(255<<8):(uint16_t)((pinNr<<8) | PIN_OW_POWER_PARASITE) $>" <$ func_code == PIN_OW_POWER_PARASITE?"selected":"" $>>ow parasite</option>
 	<option value="<$ func_code == PIN_OW_POWER_EXTERN?(255<<8):(uint16_t)((pinNr<<8) | PIN_OW_POWER_EXTERN) $>" <$ func_code == PIN_OW_POWER_EXTERN?"selected":"" $>>ow power extern</option>
+
+	<option value="<$ func_code == PIN_ADC?(255<<8):(uint16_t)((pinNr<<8) | PIN_ADC) $>"
+	<$ func_code == PIN_ADC?"selected":"" $>>adc</option>
 </select>
-%}else{
+<%cpp>
+}else{
+	uint8_t recvbuffer[VIRTUAL_DATA_LENGTH];
+	uint8_t ram_virt_data_addr = 0;
+	int port_num = pinNr/8;
+	int pin_num = pinNr%8;
+
+	ram_virt_data_addr = VIRTUAL_DATA_START + 
+				(port_num * (VIRTUAL_PORT_PINCOUNT * VIRTUAL_DATA_LENGTH))
+				 + (pin_num * VIRTUAL_DATA_LENGTH);
+
+	//get data by i2c request		
+	memset(recvbuffer, 0, 2);
+	recvbuffer[0] = (ram_virt_data_addr >> 8); //first high
+	recvbuffer[1] = (ram_virt_data_addr & 0xff); //second low
+
+</%cpp>
 %	switch(func_code)
 %	{
 %		case PIN_DISABLED:
@@ -497,15 +516,9 @@ int SlaveNr = 0;
 %		case PIN_OW_POWER_EXTERN:
 %		{	
 			<$ "OW:" $>
-<%cpp>
-			uint8_t recvbuffer[VIRTUAL_DATA_LENGTH];
-			uint8_t ram_virt_data_addr = 0;
-			int port_num = pinNr/8;
-			int pin_num = pinNr%8;
-
-			ram_virt_data_addr = VIRTUAL_DATA_START + (port_num * (VIRTUAL_PORT_PINCOUNT * VIRTUAL_DATA_LENGTH)) + (pin_num * VIRTUAL_DATA_LENGTH);
-			
-			shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+<%cpp>		
+			shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = 	
+				boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
 			if( p_slave.get() != NULL )
 			{
 				shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
@@ -515,11 +528,6 @@ int SlaveNr = 0;
 				      pages_ERROR_WRITE("No IOBoard object[%u]", SlaveNr);
 				      return 0;		//no IO_Board object -> exit function
 				}
-
-				//get data by i2c request		
-				memset(recvbuffer, 0, 2);
-				recvbuffer[0] = (ram_virt_data_addr >> 8); //first high
-				recvbuffer[1] = (ram_virt_data_addr & 0xff); //second low
 			 
 				if(p_io_board->getI2CComm()->i2cOpen()
 				    && p_io_board->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, 2, VIRTUAL_DATA_LENGTH))
@@ -532,6 +540,41 @@ int SlaveNr = 0;
 					}
 				}else{
 					pages_ERROR_WRITE("[I2C]ow read error: Slv: %u; Addr: %u",SlaveNr, ram_virt_data_addr);
+				}		
+			}
+			else
+			{
+				pages_ERROR_WRITE("No Slave object[%u]", SlaveNr);
+			}
+		}
+		break;
+		case PIN_ADC:
+		{	
+</%cpp>
+			<$ "ADC:" $>
+<%cpp>		
+			shared_ptr<icke2063::MB_Framework::MBVirtualRTUSlave> p_slave = 	
+				boost::serialization::singleton<SlaveList>::get_mutable_instance().getSlave(SlaveNr);
+			if( p_slave.get() != NULL )
+			{
+				shared_ptr<IOBoard_Slave> p_io_board = dynamic_pointer_cast<IOBoard_Slave>(p_slave);
+			
+				if(p_io_board.get() == NULL)
+				{
+				      pages_ERROR_WRITE("No IOBoard object[%u]", SlaveNr);
+				      return 0;		//no IO_Board object -> exit function
+				}
+			 
+				if(p_io_board->getI2CComm()->i2cOpen()
+				    && p_io_board->getI2CComm()->Read_I2C_Bytes(SlaveNr, recvbuffer, 2, VIRTUAL_DATA_LENGTH))
+				    {
+					uint16_t w_adc = (recvbuffer[0] << 8);
+					w_adc |= recvbuffer[1];					
+</%cpp>
+					<$$ (int)((w_adc*100)/1024) $>%(<$$ (int)(w_adc) $>/1024)
+<%cpp>
+				}else{
+					pages_ERROR_WRITE("[I2C]adc read error: Slv: %u; Addr: %u",SlaveNr, ram_virt_data_addr);
 				}		
 			}
 			else
